@@ -107,7 +107,7 @@ private:
             {
                 pose_.pose.position.x = 5.0;
                 pose_.pose.position.y = 5.0;
-                pose_.pose.position.z = 0.0; 
+                pose_.pose.position.z = 0.0; //实际还要加上高度传感器离地高度，并考虑到传感器精度（最短测量距离为0.02m）
                 start_time_ = this->now();
                 step_=4;
             }
