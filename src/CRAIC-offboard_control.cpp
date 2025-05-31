@@ -19,7 +19,8 @@ public:
         double error = target_pos - current_pos;
         integral_ += error * dt;
         double derivative = -current_vel;  // 使用飞控反馈速度作为微分项
-        return kp_ * error + ki_ * integral_ + kd_ * derivative;
+        double output = kp_ * error + ki_ * integral_ + kd_ * derivative;
+        return std::clamp(output, -2.0, 2.0);
     }
 
     void reset() {
@@ -130,15 +131,23 @@ private:
             if (flag_ == 0) {
                 flag_ = fly_to_target(0.0, 0.0, 1.0, dt);
             } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 4. Holding position.");
+                RCLCPP_INFO(this->get_logger(), "Reached step 5. Holding position.");
                 publish_velocity(0, 0, 0);
                 step_ = 6; flag_ = 0;
             }
             break;
 
         case 6:
-        //悬停
-            publish_velocity(0, 0, 0);
+        //降落
+            if (flag_ == 0) {
+                flag_ = fly_to_target(0.0, 0.0, 0.0, dt);
+            } else {
+                RCLCPP_INFO(this->get_logger(), "landing.");
+                if (arm_drone(false)) {   // 尝试上锁
+                RCLCPP_INFO(this->get_logger(), "Drone disarmed");}
+                rclcpp::shutdown();   // 关闭节点
+                step_ = 7; flag_ = 0;
+            }            
             break;
         }
     }
@@ -154,10 +163,13 @@ private:
 
     // 模式未切换则切换
     if (current_state_.mode != "OFFBOARD") {
-        if ((this->now() - last_request_time_).seconds() > 1.0) {
+        if ((this->now() - last_request_time_).seconds() > 2.0) {
+            //实际飞行需要注释掉！如果通过程序切offboard，飞机失控时遥控器将无法接管，注释掉程序会一直等待遥控器切入offboard
+
             auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
             mode_req->custom_mode = "OFFBOARD";
             set_mode_client_->async_send_request(mode_req);
+
             last_request_time_ = this->now();
             RCLCPP_INFO(this->get_logger(), "Requesting OFFBOARD mode...");
         }
@@ -181,6 +193,27 @@ private:
     flag_ = 0;
 }
 
+    bool arm_drone(bool arm)
+    {
+        if (current_state_.armed == arm) return true; // 状态已满足
+
+        auto request = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+        request->value = arm;
+
+        // 定义服务响应回调
+        using ServiceResponseFuture = rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedFuture;
+        auto response_received_callback = [this, arm](ServiceResponseFuture future) {
+            auto response = future.get();
+            if (response->success) {
+                RCLCPP_INFO(this->get_logger(), "Drone %s", arm ? "armed" : "disarmed");
+            }
+        };
+
+        arming_client_->async_send_request(request, response_received_callback);
+        last_request_time_ = this->now();
+        return false; // 需要等待响应
+    }
+
 
     int fly_to_target(double tx, double ty, double tz, double dt) {
         double ex = tx - current_pose_.pose.position.x;
@@ -203,9 +236,9 @@ private:
         geometry_msgs::msg::TwistStamped vel;
         vel.header.stamp = this->now();
         //速度限幅
-        vel.twist.linear.x = std::clamp(vx, -0.5, 0.5);
-        vel.twist.linear.y = std::clamp(vy, -0.5, 0.5);
-        vel.twist.linear.z = std::clamp(vz, -0.5, 0.5);
+        vel.twist.linear.x = std::clamp(vx, -2.0, 2.0);
+        vel.twist.linear.y = std::clamp(vy, -2.0, 2.0);
+        vel.twist.linear.z = std::clamp(vz, -2.0, 2.0);
         //发布速度
         vel_pub_->publish(vel);
     }
