@@ -8,6 +8,8 @@
 #include <cmath>
 #include <thread>
 #include "rclcpp/qos.hpp"
+#include "std_msgs/msg/int32.hpp"
+
 using namespace std::chrono_literals;
 
 class PID {
@@ -17,9 +19,10 @@ public:
 
     double compute(double target_pos, double current_pos, double current_vel, double dt) {
         double error = target_pos - current_pos;
-        integral_ += error * dt;
+        integral_ += error * dt;            //飞机位置误差做积分项
         double derivative = -current_vel;  // 使用飞控反馈速度作为微分项
         double output = kp_ * error + ki_ * integral_ + kd_ * derivative;
+        //限幅
         return std::clamp(output, -2.0, 2.0);
     }
 
@@ -68,15 +71,23 @@ public:
             "mavros/setpoint_position/local", 10);
         vel_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
             "mavros/setpoint_velocity/cmd_vel", 10);
+        //舵机控制初始化
+        servo1_pub_ = this->create_publisher<std_msgs::msg::Int32>("servo1_cmd", 10);
 
+        servo2_pub_ = this->create_publisher<std_msgs::msg::Int32>("servo2_cmd", 10);
+ 
         set_mode_client_ = this->create_client<mavros_msgs::srv::SetMode>("mavros/set_mode");
+
         arming_client_ = this->create_client<mavros_msgs::srv::CommandBool>("mavros/cmd/arming");
 
         timer_ = this->create_wall_timer(
             100ms, std::bind(&OffboardControl::timer_callback, this));
 
         last_request_time_ = this->now();
+
         start_time_ = this->now();
+
+        
     }
 
     bool is_connected() const { return current_state_.connected; }
@@ -108,15 +119,27 @@ private:
                 step_ = 3; flag_ = 0;
             }
             break;
-        case 3:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(1.5, 0.0, 1.0, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 3");
+       case 3: 
+    if (flag_ == 0) {
+        flag_ = fly_to_target(1.5, 0.0, 1.0, dt); //假设在位置（1.5.0.0.1.0投放物块）
+    } else {
+        if (!servo_action_started_) {
+            control_servo(1,90);  // 发送舵机角度
+            servo_action_start_time_ = this->now();  // 记录时间
+            servo_action_started_ = true;
+            RCLCPP_INFO(this->get_logger(), "Servo turning... waiting 1s before next step");
+        } else {
+            // 等待 1 秒后再进入下一步
+            auto elapsed = this->now() - servo_action_start_time_;
+            if (elapsed.seconds() >= 1.0) {
+                RCLCPP_INFO(this->get_logger(), "Reached step 3 - servo finished");
                 pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
                 step_ = 4; flag_ = 0;
+                servo_action_started_ = false;  // 清除状态
             }
-            break;
+        }
+    }
+    break;
         case 4:
             if (flag_ == 0) {
                 flag_ = fly_to_target(1.0, 0.0, 1.0, dt);
@@ -243,10 +266,30 @@ private:
         vel_pub_->publish(vel);
     }
 
+    //舵机控制函数，直接输入要转动的角度
+    void control_servo(int num,int angle) {
+    std_msgs::msg::Int32 msg;
+    msg.data = angle;
+    if(num==1)
+    {
+        servo1_pub_->publish(msg);
+    }
+    else if(num==2)
+    {
+        servo2_pub_->publish(msg);
+    }
+    RCLCPP_INFO(this->get_logger(), "Published servo angle: %d", angle);
+}
+
     int step_;
     int flag_;
+
     rclcpp::Time last_request_time_;
     rclcpp::Time start_time_;
+    //舵机控制时间延时
+    rclcpp::Time servo_action_start_time_;
+
+    bool servo_action_started_ = false;
 
     mavros_msgs::msg::State current_state_;
     geometry_msgs::msg::PoseStamped current_pose_;
@@ -268,6 +311,10 @@ private:
 
     rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr arming_client_;
 
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr servo1_pub_;
+
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr servo2_pub_;
+
     rclcpp::TimerBase::SharedPtr timer_;
 };
 
@@ -283,6 +330,7 @@ int main(int argc, char** argv) {
     }
 
     RCLCPP_INFO(node->get_logger(), "FCU connected!");
+    //开启程序主循环
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
