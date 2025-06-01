@@ -50,7 +50,7 @@ def generate_launch_description():
         Node(
             package='offboard_control',
             executable='servo_node.py',
-            name='servo_controller'
+            name='dual_servo_controller'
         )
         
     ])
