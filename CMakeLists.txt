@@ -7,11 +7,13 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
 find_package(rclcpp REQUIRED)
+find_package(rclpy REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(mavros_msgs REQUIRED)
 
@@ -25,6 +27,11 @@ ament_target_dependencies(offboard_node
 
 install(TARGETS offboard_node DESTINATION lib/${PROJECT_NAME})
 if(BUILD_TESTING)
+
+install(PROGRAMS
+  src/servo_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
   # comment the line when a copyright and license is added to all source files
