@@ -46,5 +46,11 @@ def generate_launch_description():
             executable='tracked2vision',
             name='tracked2vision',
             output='screen'
+        ),
+        Node(
+            package='offboard_control',
+            executable='servo_node.py',
+            name='servo_controller'
         )
+        
     ])
