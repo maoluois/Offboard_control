@@ -40,9 +40,9 @@ public:
     OffboardControl()
         : Node("offboard_control"),
           step_(0), flag_(0),
-          pid_x_(0.8, 0.1, 0.2), //分别设置三轴PID
-          pid_y_(0.8, 0.1, 0.2),
-          pid_z_(0.8, 0.1, 0.1)
+          pid_x_(0.8, 0.0, 0.2), //分别设置三轴PID
+          pid_y_(0.8, 0.0, 0.2),
+          pid_z_(0.8, 0.0, 0.1)
     {
         //状态接收器初始化
         state_sub_ = this->create_subscription<mavros_msgs::msg::State>(
@@ -81,7 +81,7 @@ public:
         arming_client_ = this->create_client<mavros_msgs::srv::CommandBool>("mavros/cmd/arming");
 
         timer_ = this->create_wall_timer(
-            100ms, std::bind(&OffboardControl::timer_callback, this));
+            50ms, std::bind(&OffboardControl::timer_callback, this));
 
         last_request_time_ = this->now();
 
@@ -92,11 +92,12 @@ public:
 
     bool is_connected() const { return current_state_.connected; }
 
+
 private:
     void timer_callback() {
         if (!current_state_.connected) return;
 
-        double dt = 0.1;
+        double dt = 0.05;
         switch (step_) {
         case 0:
             handle_init_phase();
@@ -177,38 +178,47 @@ private:
             }
             break;
 */
-        case 2:
-        //降落
-            if (flag_ == 0) {
-                flag_ = fly_to_target(0.0, 0.0, 0.16, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "landing.");
-                if (arm_drone(false)) {   // 尝试上锁
-                RCLCPP_INFO(this->get_logger(), "Drone disarmed");}
-                rclcpp::shutdown();   // 关闭节点
-                step_ = 7; flag_ = 0;
-            }            
-            break;
+       case 2:
+    if (flag_ == 0) {
+        flag_ = fly_to_target(0.0, 0.0, 0.16, dt);  // 下降到指定位置
+    } else {
+        RCLCPP_INFO(this->get_logger(), "landing.");
+
+        auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+
+        arm_req->value = false;
+
+         arming_client_->async_send_request(arm_req);
+        // 等待 3 秒，确保 PX4 收到命令
+        rclcpp::sleep_for(std::chrono::seconds(3));
+
+        RCLCPP_INFO(this->get_logger(), "Disarm request sent. Shutting down...");
+
+        rclcpp::shutdown();   // 关闭节点
+    }
+    break;
+
+            
         }
     }
 
     void handle_init_phase() {
-    // 发布固定位置 setpoint 保持 FCU 接受 OFFBOARD 模式
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header.stamp = this->now();
-    pose.pose.position.x = 0.0;
-    pose.pose.position.y = 0.0;
-    pose.pose.position.z = 1.0; // 起飞目标高度
-    pose_pub_->publish(pose); // 关键：>2Hz 持续发布
+    // 发布固定微小速度使 setpoint 保持 FCU 接受 OFFBOARD 模式
+      geometry_msgs::msg::TwistStamped vel;
+    vel.header.stamp = this->now();
+    vel.twist.linear.x = 0.0;
+    vel.twist.linear.y = 0.0;
+    vel.twist.linear.z = 0.1;  // 微小上升速度触发控制器激活
+    vel_pub_->publish(vel); // 只发布 velocity
 
     // 模式未切换则切换
     if (current_state_.mode != "OFFBOARD") {
         if ((this->now() - last_request_time_).seconds() > 2.0) {
             //实际飞行需要注释掉！如果通过程序切offboard，飞机失控时遥控器将无法接管，注释掉程序会一直等待遥控器切入offboard
 
-            auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
-            mode_req->custom_mode = "OFFBOARD";
-            set_mode_client_->async_send_request(mode_req);
+           // auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
+           // mode_req->custom_mode = "OFFBOARD";
+            //set_mode_client_->async_send_request(mode_req);
 
             last_request_time_ = this->now();
             RCLCPP_INFO(this->get_logger(), "Requesting OFFBOARD mode...");
@@ -298,6 +308,7 @@ private:
     RCLCPP_INFO(this->get_logger(), "Published servo angle: %d", angle);
 }
 
+    
     int step_;
     int flag_;
 
@@ -311,6 +322,10 @@ private:
     bool servo_action_started_ = false;
 
     bool hold_position_start_ = false;
+
+    bool pid_enabled_ = false;
+
+    
 
     mavros_msgs::msg::State current_state_;
     geometry_msgs::msg::PoseStamped current_pose_;
