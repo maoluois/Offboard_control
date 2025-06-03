@@ -211,6 +211,12 @@ private:
     vel.twist.linear.z = 0.1;  // 微小上升速度触发控制器激活
     vel_pub_->publish(vel); // 只发布 velocity
 
+    geometry_msgs::msg::PoseStamped pose;
+pose.header.stamp = this->now();
+pose.pose.position.x = current_pose_.pose.position.x;
+pose.pose.position.y = current_pose_.pose.position.y;
+pose.pose.position.z = current_pose_.pose.position.z + 0.01; // 微小变化
+    pose_pub_->publish(pose);    
     // 模式未切换则切换
     if (current_state_.mode != "OFFBOARD") {
         if ((this->now() - last_request_time_).seconds() > 2.0) {
