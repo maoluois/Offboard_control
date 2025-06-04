@@ -68,8 +68,8 @@ public:
            });        
 
         //姿态发布器初始化
-        // pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-        //     "mavros/setpoint_position/local", 10);
+         //pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+          //   "mavros/setpoint_position/local", 10);
 
         // vel_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
         //     "mavros/setpoint_velocity/cmd_vel", 10);
@@ -185,7 +185,7 @@ private:
 */
        case 2:
     if (flag_ == 0) {
-        flag_ = fly_to_target(0.0, 0.0, 0.17, dt);  // 下降到指定位置
+        flag_ = fly_to_target(0.0, 0.0, 0.16, dt);  // 下降到指定位置
     } else {
         RCLCPP_INFO(this->get_logger(), "landing.");
 
@@ -208,10 +208,9 @@ private:
     }
 
     void handle_init_phase() {
-    // 发布固定微小速度使 setpoint 保持 FCU 接受 OFFBOARD 模式
-        auto message = mavros_msgs::msg::PositionTarget();
-       // message.header.stamp = this->now();
-       // message.header.frame_id = "map";
+            auto message = mavros_msgs::msg::PositionTarget();
+        message.header.stamp = this->now();
+        message.header.frame_id = "map";
         message.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
         
         // 设置掩码只使用位置控制
@@ -228,11 +227,19 @@ private:
         // 设置初始位置
         message.position.x = 0.0;
         message.position.y = 0.0;
-        message.position.z = 0.17;  // 设置一个小的高度作为初始目标
-        //message.yaw = 0.0;
+        message.position.z = 0.1;  // 设置一个小的高度作为初始目标
+        
 
         raw_pub->publish(message);
-        
+/*
+         // 发布固定位置 setpoint 保持 FCU 接受 OFFBOARD 模式
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header.stamp = this->now();
+    pose.pose.position.x = 0.0;
+    pose.pose.position.y = 0.0;
+    pose.pose.position.z = 1.0; // 起飞目标高度
+    pose_pub_->publish(pose); // 关键：>2Hz 持续发布
+  */      
         // 模式未切换则切换
         if (current_state_.mode != "OFFBOARD") {
             if ((this->now() - last_request_time_).seconds() > 2.0) {
@@ -240,7 +247,7 @@ private:
 
             // auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
             // mode_req->custom_mode = "OFFBOARD";
-                //set_mode_client_->async_send_request(mode_req);
+            // set_mode_client_->async_send_request(mode_req);
 
                 last_request_time_ = this->now();
                 RCLCPP_INFO(this->get_logger(), "Requesting OFFBOARD mode...");
@@ -306,8 +313,8 @@ private:
 
     void publish_velocity(double vx, double vy, double vz) {
         auto message = mavros_msgs::msg::PositionTarget();
-       // message.header.stamp = this->now();
-       // message.header.frame_id = "map";
+        message.header.stamp = this->now();
+        message.header.frame_id = "map";
         message.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
         
         // 设置掩码只使用速度控制
@@ -363,8 +370,6 @@ private:
 
     bool pid_enabled_ = false;
 
-    
-
     mavros_msgs::msg::State current_state_;
     geometry_msgs::msg::PoseStamped current_pose_;
     geometry_msgs::msg::TwistStamped current_vel_;
@@ -377,9 +382,9 @@ private:
 
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_sub_;
 
-    // rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    //  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
 
-    // rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr vel_pub_;
+    //  rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr vel_pub_;
 
     rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr raw_pub;
 
