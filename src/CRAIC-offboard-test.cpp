@@ -185,7 +185,7 @@ private:
 */
        case 2:
     if (flag_ == 0) {
-        flag_ = fly_to_target(0.0, 0.0, 0.16, dt);  // 下降到指定位置
+        flag_ = fly_to_target(0.0, 0.0, 0.17, dt);  // 下降到指定位置
     } else {
         RCLCPP_INFO(this->get_logger(), "landing.");
 
@@ -228,8 +228,8 @@ private:
         // 设置初始位置
         message.position.x = 0.0;
         message.position.y = 0.0;
-        message.position.z = 0.1;  // 设置一个小的高度作为初始目标
-        message.yaw = 0.0;
+        message.position.z = 0.17;  // 设置一个小的高度作为初始目标
+        //message.yaw = 0.0;
 
         raw_pub->publish(message);
         
