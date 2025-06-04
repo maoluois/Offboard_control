@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
+#include "mavros_msgs/PositionTarget.h"
 #include "mavros_msgs/msg/state.hpp"
 #include "mavros_msgs/srv/set_mode.hpp"
 #include "mavros_msgs/srv/command_bool.hpp"
@@ -67,10 +68,13 @@ public:
            });        
 
         //姿态发布器初始化
-        pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-            "mavros/setpoint_position/local", 10);
-        vel_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
-            "mavros/setpoint_velocity/cmd_vel", 10);
+        // pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+        //     "mavros/setpoint_position/local", 10);
+
+        // vel_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
+        //     "mavros/setpoint_velocity/cmd_vel", 10);
+        raw_pub = this->create_publisher<mavros_msgs::msg::PositionTarget>(
+            "mavros/setpoint_raw/local", 10);
         //舵机控制初始化
         servo1_pub_ = this->create_publisher<std_msgs::msg::Int32>("servo1_cmd", 10);
 
@@ -104,6 +108,7 @@ private:
             break;
 
         case 1:
+
     if (flag_ == 0) {
         flag_ = fly_to_target(0.0, 0.0, 1.0, dt); //假设在位置（1.5.0.0.1.0投放物块）
     } else {
@@ -204,50 +209,61 @@ private:
 
     void handle_init_phase() {
     // 发布固定微小速度使 setpoint 保持 FCU 接受 OFFBOARD 模式
-      geometry_msgs::msg::TwistStamped vel;
-    vel.header.stamp = this->now();
-    vel.twist.linear.x = 0.0;
-    vel.twist.linear.y = 0.0;
-    vel.twist.linear.z = 0.1;  // 微小上升速度触发控制器激活
-    vel_pub_->publish(vel); // 只发布 velocity
+        auto message = mavros_msgs::msg::PositionTarget();
+       // message.header.stamp = this->now();
+       // message.header.frame_id = "map";
+        message.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+        
+        // 设置掩码只使用位置控制
+        message.type_mask = 
+            mavros_msgs::msg::PositionTarget::IGNORE_VX |
+            mavros_msgs::msg::PositionTarget::IGNORE_VY |
+            mavros_msgs::msg::PositionTarget::IGNORE_VZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFX |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFY |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE|
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW;
 
-    geometry_msgs::msg::PoseStamped pose;
-pose.header.stamp = this->now();
-pose.pose.position.x = current_pose_.pose.position.x;
-pose.pose.position.y = current_pose_.pose.position.y;
-pose.pose.position.z = current_pose_.pose.position.z + 0.01; // 微小变化
-    pose_pub_->publish(pose);    
-    // 模式未切换则切换
-    if (current_state_.mode != "OFFBOARD") {
-        if ((this->now() - last_request_time_).seconds() > 2.0) {
-            //实际飞行需要注释掉！如果通过程序切offboard，飞机失控时遥控器将无法接管，注释掉程序会一直等待遥控器切入offboard
+        // 设置初始位置
+        message.position.x = 0.0;
+        message.position.y = 0.0;
+        message.position.z = 0.1;  // 设置一个小的高度作为初始目标
+        message.yaw = 0.0;
 
-           // auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
-           // mode_req->custom_mode = "OFFBOARD";
-            //set_mode_client_->async_send_request(mode_req);
+        raw_pub->publish(message);
+        
+        // 模式未切换则切换
+        if (current_state_.mode != "OFFBOARD") {
+            if ((this->now() - last_request_time_).seconds() > 2.0) {
+                //实际飞行需要注释掉！如果通过程序切offboard，飞机失控时遥控器将无法接管，注释掉程序会一直等待遥控器切入offboard
 
-            last_request_time_ = this->now();
-            RCLCPP_INFO(this->get_logger(), "Requesting OFFBOARD mode...");
+            // auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
+            // mode_req->custom_mode = "OFFBOARD";
+                //set_mode_client_->async_send_request(mode_req);
+
+                last_request_time_ = this->now();
+                RCLCPP_INFO(this->get_logger(), "Requesting OFFBOARD mode...");
+            }
+            return;
         }
-        return;
-    }
 
-    // 解锁
-    if (!current_state_.armed) {
-        if ((this->now() - last_request_time_).seconds() > 1.0) {
-            auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
-            arm_req->value = true;
-            arming_client_->async_send_request(arm_req);
-            last_request_time_ = this->now();
-            RCLCPP_INFO(this->get_logger(), "Requesting arming...");
+        // 解锁
+        if (!current_state_.armed) {
+            if ((this->now() - last_request_time_).seconds() > 1.0) {
+                auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+                arm_req->value = true;  
+                arming_client_->async_send_request(arm_req);
+                last_request_time_ = this->now();
+                RCLCPP_INFO(this->get_logger(), "Requesting arming...");
+            }
+            return;
         }
-        return;
-    }
 
-    RCLCPP_INFO(this->get_logger(), "OFFBOARD & armed, proceed to step 1");
-    step_ = 1;
-    flag_ = 0;
-}
+        RCLCPP_INFO(this->get_logger(), "OFFBOARD & armed, proceed to step 1");
+        step_ = 1;
+        flag_ = 0;
+    }
 
     bool arm_drone(bool arm)
     {
@@ -289,14 +305,30 @@ pose.pose.position.z = current_pose_.pose.position.z + 0.01; // 微小变化
     }
 
     void publish_velocity(double vx, double vy, double vz) {
-        geometry_msgs::msg::TwistStamped vel;
-        vel.header.stamp = this->now();
-        //速度限幅
-        vel.twist.linear.x = std::clamp(vx, -2.0, 2.0);
-        vel.twist.linear.y = std::clamp(vy, -2.0, 2.0);
-        vel.twist.linear.z = std::clamp(vz, -2.0, 2.0);
-        //发布速度
-        vel_pub_->publish(vel);
+        auto message = mavros_msgs::msg::PositionTarget();
+       // message.header.stamp = this->now();
+       // message.header.frame_id = "map";
+        message.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+        
+        // 设置掩码只使用速度控制
+        message.type_mask = 
+            mavros_msgs::msg::PositionTarget::IGNORE_PX |
+            mavros_msgs::msg::PositionTarget::IGNORE_PY |
+            mavros_msgs::msg::PositionTarget::IGNORE_PZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFX |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFY |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW;
+
+        // 速度限幅
+        message.velocity.x = std::clamp(vx, -2.0, 2.0);
+        message.velocity.y = std::clamp(vy, -2.0, 2.0);
+        message.velocity.z = std::clamp(vz, -2.0, 2.0);
+        //message.yaw = 0.0;
+
+        // 发布速度命令
+        raw_pub->publish(message);
     }
 
     //舵机控制函数，直接输入要转动的角度
@@ -345,9 +377,11 @@ pose.pose.position.z = current_pose_.pose.position.z + 0.01; // 微小变化
 
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_sub_;
 
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    // rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
 
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr vel_pub_;
+    // rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr vel_pub_;
+
+    rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr raw_pub;
 
     rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr set_mode_client_;
 
