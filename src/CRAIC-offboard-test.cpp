@@ -239,7 +239,7 @@ private:
         // 设置初始位置
         message.position.x = 0.0;
         message.position.y = 0.0;
-        message.position.z = 0.1;  // 设置一个小的高度作为初始目标
+        message.position.z = 0.18;  // 设置一个小的高度作为初始目标
         
 
         raw_pub->publish(message);
