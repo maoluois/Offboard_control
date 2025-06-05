@@ -108,41 +108,74 @@ private:
             break;
 
         case 1:
-
     if (flag_ == 0) {
-        flag_ = fly_to_target(0.0, 0.0, 1.0, dt); //假设在位置（1.5.0.0.1.0投放物块）
+        flag_ = fly_to_target(0.0, 0.0, 0.5, dt); //假设在位置（1.5.0.0.1.0投放物块）
     } else {
-         fly_to_target(0.0, 0.0, 1.0, dt);
+         fly_to_target(0.0, 0.0, 0.5, dt);
         if (!hold_position_start_) {
           hold_pisition_start_time_= this->now();
             hold_position_start_ = true;
-            RCLCPP_INFO(this->get_logger(), "holding position");
+            RCLCPP_INFO(this->get_logger(), "reach step 1, holding ");
         } else {
             // 等待 15 秒后再进入下一步
             auto elapsed = this->now() - hold_pisition_start_time_;
-            if (elapsed.seconds() >= 15.0) {
-                RCLCPP_INFO(this->get_logger(), "exit holding position");
+            if (elapsed.seconds() >= 3.0) {
+                RCLCPP_INFO(this->get_logger(), "go to step 2");
                 pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
                 step_ = 2; flag_ = 0;
-                servo_action_started_ = false;  // 清除状态
+                hold_position_start_ = false;  // 清除状态
             }
         }
     }
             break;
-/*
+
         case 2:
             if (flag_ == 0) {
-                flag_ = fly_to_target(1.0, 0.0, 1.0, dt);
+                flag_ = fly_to_target(1.0, 0.0, 0.5, dt);
             } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 2");
+         fly_to_target(1.0, 0.0, 0.5, dt);
+        if (!hold_position_start_) {
+          hold_pisition_start_time_= this->now();
+            hold_position_start_ = true;
+            RCLCPP_INFO(this->get_logger(), "reach step 2, holding");
+        } else {
+            // 等待 15 秒后再进入下一步
+            auto elapsed = this->now() - hold_pisition_start_time_;
+            if (elapsed.seconds() >= 3.0) {
+                RCLCPP_INFO(this->get_logger(), "go to step 3");
                 pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
                 step_ = 3; flag_ = 0;
+                hold_position_start_ = false;  // 清除状态
             }
+        }
+    }
             break;
 
+        case 3:
+            if (flag_ == 0) {
+                flag_ = fly_to_target(0.0, 0.0, 0.5, dt);
+            } else {
+         fly_to_target(0.0, 0.0, 0.5, dt);
+        if (!hold_position_start_) {
+          hold_pisition_start_time_= this->now();
+            hold_position_start_ = true;
+            RCLCPP_INFO(this->get_logger(), "reach step 3, holding");
+        } else {
+            // 等待 15 秒后再进入下一步
+            auto elapsed = this->now() - hold_pisition_start_time_;
+            if (elapsed.seconds() >= 3.0) {
+                RCLCPP_INFO(this->get_logger(), "go to step 4");
+                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
+                step_ = 4; flag_ = 0;
+                hold_position_start_ = false;  // 清除状态
+            }
+        }
+    }
+            break;            
+/*
        case 3: 
     if (flag_ == 0) {
-        flag_ = fly_to_target(1.5, 0.0, 1.0, dt); //假设在位置（1.5.0.0.1.0投放物块）
+        flag_ = fly_to_target(1.5, 0.0, 0.5, dt); //假设在位置（1.5.0.0.1.0投放物块）
     } else {
         if (!servo_action_started_) {
             control_servo(1,90);  // 发送舵机序号(舵机1对应GPIO 18号)和角度
@@ -161,33 +194,12 @@ private:
         }
     }
     break;
-
-        case 4:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(1.0, 0.0, 1.0, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 4. Holding position.");
-                //误差指令，准备计算下一个点的PID
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 5; flag_ = 0;
-            }
-            break;
-
-        case 5:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(0.0, 0.0, 1.0, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 5. Holding position.");
-                publish_velocity(0, 0, 0);
-                step_ = 6; flag_ = 0;
-            }
-            break;
 */
-       case 2:
+       case 4:
     if (flag_ == 0) {
-        flag_ = fly_to_target(0.0, 0.0, 0.16, dt);  // 下降到指定位置
+        flag_ = fly_to_target(0.0, 0.0, 0.18, dt);  // 飞机降落
     } else {
-        RCLCPP_INFO(this->get_logger(), "landing.");
+        RCLCPP_INFO(this->get_logger(), "landed.");
 
         auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
 
@@ -245,9 +257,9 @@ private:
             if ((this->now() - last_request_time_).seconds() > 2.0) {
                 //实际飞行需要注释掉！如果通过程序切offboard，飞机失控时遥控器将无法接管，注释掉程序会一直等待遥控器切入offboard
 
-            // auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
-            // mode_req->custom_mode = "OFFBOARD";
-            // set_mode_client_->async_send_request(mode_req);
+             //auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
+             //mode_req->custom_mode = "OFFBOARD";
+             //set_mode_client_->async_send_request(mode_req);
 
                 last_request_time_ = this->now();
                 RCLCPP_INFO(this->get_logger(), "Requesting OFFBOARD mode...");
