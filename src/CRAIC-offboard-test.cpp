@@ -41,9 +41,9 @@ public:
     OffboardControl()
         : Node("offboard_control"),
           step_(0), flag_(0),
-          pid_x_(0.8, 0.0, 0.2), //分别设置三轴PID
-          pid_y_(0.8, 0.0, 0.2),
-          pid_z_(0.8, 0.0, 0.1)
+          pid_x_(1.0, 0.0, 0.5), //分别设置三轴PID
+          pid_y_(1.0, 0.0, 0.5),
+          pid_z_(1.2, 0.0, 0.35)
     {
         //状态接收器初始化
         state_sub_ = this->create_subscription<mavros_msgs::msg::State>(
@@ -195,7 +195,7 @@ private:
     }
     break;
 */
-       case 4:
+/*       case 4:
     if (flag_ == 0) {
         flag_ = fly_to_target(0.0, 0.0, 0.18, dt);  // 飞机降落
     } else {
@@ -213,11 +213,81 @@ private:
 
         rclcpp::shutdown();   // 关闭节点
     }
+    break;*/
+
+    case 4:
+
+    if(!hold_position_start_) {
+        hold_pisition_start_time_= this->now();
+
+        publish_position(0.0,0.0, 0.05);
+    }else{
+
+        publish_position(0.0,0.0, 0.05);
+        auto elapsed = this->now() - hold_pisition_start_time_;
+
+        if (elapsed.seconds() >= 5.0) {
+        RCLCPP_INFO(this->get_logger(), "landed.");
+
+        auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+
+        arm_req->value = false;
+
+         arming_client_->async_send_request(arm_req);
+        // 等待 3 秒，确保 PX4 收到命令
+        rclcpp::sleep_for(std::chrono::seconds(3));
+
+        RCLCPP_INFO(this->get_logger(), "Disarm request sent. Shutting down...");
+
+        rclcpp::shutdown();   // 关闭节点}
+
+        }
     break;
 
             
         }
+/*
+        case 4: {
+            double tx = 0.0, ty = 0.0, tz = 0.18;
+            double ex = tx - current_pose_.pose.position.x;
+            double ey = ty - current_pose_.pose.position.y;
+            double ez = tz - current_pose_.pose.position.z;
+
+            double vx = pid_x_.compute(tx, current_pose_.pose.position.x, current_vel_.twist.linear.x, dt);
+            double vy = pid_y_.compute(ty, current_pose_.pose.position.y, current_vel_.twist.linear.y, dt);
+            double vz = pid_z_.compute(tz, current_pose_.pose.position.z, current_vel_.twist.linear.z, dt);
+
+            // 低于 0.3 米时锁定横向速度，避免偏移
+            if (current_pose_.pose.position.z < 0.3) {
+                vx = 0.0;
+                vy = 0.0;
+            }
+
+            publish_velocity(vx, vy, vz);
+            RCLCPP_INFO(this->get_logger(), "Landing... vx=%.2f vy=%.2f vz=%.2f", vx, vy, vz);
+
+            double horizontal_dist = std::hypot(ex, ey);
+            double vertical_error = std::abs(ez);
+
+            // 当位置基本对准并达到高度，认为降落完成
+            if (horizontal_dist < 0.1 && vertical_error < 0.03) {
+                RCLCPP_INFO(this->get_logger(), "Landing complete, disarming...");
+
+                auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+                arm_req->value = false;
+                arming_client_->async_send_request(arm_req);
+
+                rclcpp::sleep_for(std::chrono::seconds(3));
+                rclcpp::shutdown();
+            }
+
+            break;
+        }
+*/
+
+
     }
+}
 
     void handle_init_phase() {
             auto message = mavros_msgs::msg::PositionTarget();
@@ -350,9 +420,37 @@ private:
         raw_pub->publish(message);
     }
 
+    void publish_position(double px, double py, double pz) {
+        auto message = mavros_msgs::msg::PositionTarget();
+        message.header.stamp = this->now();
+        message.header.frame_id = "map";
+        message.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+        
+        // 设置掩码只使用速度控制
+        message.type_mask = 
+            mavros_msgs::msg::PositionTarget::IGNORE_VX |
+            mavros_msgs::msg::PositionTarget::IGNORE_VY |
+            mavros_msgs::msg::PositionTarget::IGNORE_VZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFX |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFY |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW;
+
+        // 速度限幅
+        message.position.x = px;
+        message.position.y = py;
+        message.position.z = pz;
+        //message.yaw = 0.0;
+
+        // 发布速度命令
+        raw_pub->publish(message);
+    }
+
     //舵机控制函数，直接输入要转动的角度
     void control_servo(int num,int angle) {
     std_msgs::msg::Int32 msg;
+    //角度，单位是°
     msg.data = angle;
     if(num==1)
     {
