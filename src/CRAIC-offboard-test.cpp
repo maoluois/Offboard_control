@@ -104,155 +104,322 @@ private:
 
         // double dt = 0.02;
         switch (step_) {
-        case 0:
-            handle_init_phase();
+            case 0:
+                handle_init_phase();
+                break;
+
+            case 1:
+        
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(0.0, 0.0, 0.5);
+                RCLCPP_INFO(this->get_logger(), "reach step 1");
+            } 
+            else 
+            {
+                publish_position(0.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 20.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 2");
+                    step_ = 2;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+            
+            break;
+                
+            case 2:
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(1.0, 0.0, 0.5);
+                RCLCPP_INFO(this->get_logger(), "reach step 2");
+            } 
+            else 
+            {
+                publish_position(1.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 3");
+                    step_ = 3;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
+            break;	
+                
+            case 3:
+            //图片靶1,舵机投放位置 
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.0, 0.0, 0.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 3");
+                } 
+                else 
+                {
+                    publish_position(1.0, 0.0, 0.3); // 保持在 (0, 0, 0.15) 的位置
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.0) {
+
+                        if(!servo_action_started_)
+                        {
+                        servo_action_start_time_=this->now();  
+                        servo_action_started_=true;
+                        control_servo(2, 120); 
+                        }
+                        else 
+                        {
+                            auto elapsed_servo = this->now() - servo_action_start_time_;
+                            control_servo(2, 120); 
+                            if (elapsed_servo.seconds() >= 1.0) {
+                                // control_servo(1, 90); // 舵机1转动到90度
+                                RCLCPP_INFO(this->get_logger(), "go to step 4");
+                                step_ = 4;
+                                hold_position_start_ = false;  // 清除状态
+                                servo_action_started_ = false; // 重置舵机动作状态
+                            }
+
+                        }                 
+                    }        
+                }
+                
+            break;
+                
+            case 4:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.0, 0.0, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 4");
+                } 
+                else 
+                {
+                    publish_position(1.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.0) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 5");
+                        step_ = 5;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;	 
+
+            case 5:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.0, 1.0, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 5");
+                } 
+                else 
+                {
+                    publish_position(1.0, 1.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 6");
+                        step_ = 6;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
             break;
 
-        case 1:
-	
-		if (!hold_position_start_) {
-		    hold_pisition_start_time_= this->now();
-		    hold_position_start_ = true;
-            	    publish_position(0.0, 0.0, 0.5);
-                    RCLCPP_INFO(this->get_logger(), "reach step 1");
-		} else {
+            case 6:
+            //图片靶2,舵机投放位置 
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(1.0, 1.0, 0.3);
+                            RCLCPP_INFO(this->get_logger(), "reach step 6");
+                } else {
+                    publish_position(1.0, 1.0, 0.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.0) {
 
-                    publish_position(0.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
-		    auto elapsed = this->now() - hold_pisition_start_time_;
-		    if (elapsed.seconds() >= 25.0) {
-		        RCLCPP_INFO(this->get_logger(), "go to step 2");
-		        step_ = 2;
-		        hold_position_start_ = false;  // 清除状态
-		    }
-		}
-	    
-		    break;
-		    
-	case 2:
-	
-		if (!hold_position_start_) {
-		    hold_pisition_start_time_= this->now();
-		    hold_position_start_ = true;
-            	    publish_position(1.0, 0.0, 0.5);
-                    RCLCPP_INFO(this->get_logger(), "reach step 2");
-		} else {
-                    publish_position(1.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
-		    auto elapsed = this->now() - hold_pisition_start_time_;
-		    if (elapsed.seconds() >= 8.0) {
-		        RCLCPP_INFO(this->get_logger(), "go to step 3");
-		        step_ = 3;
-		        hold_position_start_ = false;  // 清除状态
-		    }
-		}
-	    
-		    break;	
-		    
-	case 3:
-	//图片靶1,舵机投放位置 
-		if (!hold_position_start_) {
-		    hold_pisition_start_time_= this->now();
-		    hold_position_start_ = true;
-            	    publish_position(1.0, 0.0, 0.3);
-                    RCLCPP_INFO(this->get_logger(), "reach step 3");
-		} else {
-            publish_position(1.0, 0.0, 0.3); // 保持在 (0, 0, 0.15) 的位置
-		    auto elapsed = this->now() - hold_pisition_start_time_;
-		    if (elapsed.seconds() >= 5.0) {
+                        if(!servo_action_started_)
+                        {
+                        servo_action_start_time_=this->now();  
+                        servo_action_started_=true;
+                        control_servo(2, 50); // 舵机2转动到0度
+                        }
+                        else 
+                        {
+                            auto elapsed_servo = this->now() - servo_action_start_time_;
+                            control_servo(2, 50); // 舵机2转动到0度
+                            if (elapsed_servo.seconds() >= 1.0) {
+                                // control_servo(1, 90); // 舵机1转动到90度
+                                RCLCPP_INFO(this->get_logger(), "go to step 7");
+                                step_ = 7;
+                                hold_position_start_ = false;  // 清除状态
+                                servo_action_started_ = false; // 重置舵机动作状态
+                            }
 
-                if(!servo_action_started_)
-                {
-                   servo_action_start_time_=this->now();  
-                   servo_action_started_=true;
+                        }                 
+                    }        
                 }
-                else{
-                    auto elapsed_servo = this->now() - servo_action_start_time_;
-                    if (elapsed_servo.seconds() >= 1.0) {
-                        control_servo(1, 90); // 舵机1转动到90度
-                        control_servo(2, 90); // 舵机2转动到90度
-                        servo_action_started_ = false; // 重置舵机动作状态
-                    }
+                
+            break;
 
-                }              
-		        RCLCPP_INFO(this->get_logger(), "go to step 4");
-		        step_ = 4;
-		        hold_position_start_ = false;  // 清除状态
-		    }
-		}
-	    
-		    break;
-		    
-	case 4:
-	
-		if (!hold_position_start_) {
-		    hold_pisition_start_time_= this->now();
-		    hold_position_start_ = true;
-            	    publish_position(1.0, 0.0, 0.5);
-                    RCLCPP_INFO(this->get_logger(), "reach step 4");
-		} else {
-                    publish_position(1.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
-		    auto elapsed = this->now() - hold_pisition_start_time_;
-		    if (elapsed.seconds() >= 5.0) {
-		        RCLCPP_INFO(this->get_logger(), "go to step 5");
-		        step_ = 5;
-		        hold_position_start_ = false;  // 清除状态
-		    }
-		}
-	    
-		    break;	    		    	    
-	case 5:
-	
-		if (!hold_position_start_) {
-		    hold_pisition_start_time_= this->now();
-		    hold_position_start_ = true;
-            	    publish_position(0.0, 0.0, 0.5);
-                    RCLCPP_INFO(this->get_logger(), "reach step 5");
-		} else {
-                    publish_position(0.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
-		    auto elapsed = this->now() - hold_pisition_start_time_;
-		    if (elapsed.seconds() >= 5.0) {
-		        RCLCPP_INFO(this->get_logger(), "go to step 6");
-		        step_ = 6;
-		        hold_position_start_ = false;  // 清除状态
-		    }
-		}
-	    
-		    break;
-        
-       case 6:
-	    if (!hold_position_start_) {
-		hold_pisition_start_time_ = this->now();
-		hold_position_start_ = true;
-		publish_position(0.0,0.0, 0.15);
-        	RCLCPP_INFO(this->get_logger(), "start step 6");
-	    }
-        else { 
-
-		publish_position(0.0,0.0, 0.15);
-		auto elapsed = this->now() - hold_pisition_start_time_;
-
-		if (elapsed.seconds() >= 5.0) {
-			RCLCPP_INFO(this->get_logger(), "landed.");
-
-			auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
-
-			arm_req->value = false;
-
-			 arming_client_->async_send_request(arm_req);
-			// 等待 3 秒，确保 PX4 收到命令
-			rclcpp::sleep_for(std::chrono::seconds(3));
-
-			RCLCPP_INFO(this->get_logger(), "Disarm request sent. Shutting down...");
-
-			rclcpp::shutdown();   // 关闭节点
-
-			}
-  		}
-	    break;
-
+            case 7:
             
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(1.0, 1.0, 0.5);
+                            RCLCPP_INFO(this->get_logger(), "reach step 7");
+                } else {
+                
+                            publish_position(1.0, 1.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.0) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 8");
+                        step_ = 8;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 8:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(0.0, 1.0, 0.5);
+                            RCLCPP_INFO(this->get_logger(), "reach step 8");
+                } 
+                else 
+                {
+                    publish_position(0.0, 1.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 9");
+                    step_ = 9;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 9:
+            //图片靶3,舵机投放位置 
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(0.0, 1.0, 0.3);
+                            RCLCPP_INFO(this->get_logger(), "reach step 9");
+                } else {
+                    publish_position(0.0, 1.0, 0.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.0) {
+
+                        if(!servo_action_started_)
+                        {
+                        servo_action_start_time_=this->now();  
+                        servo_action_started_=true;
+                        control_servo(1, 0); // 舵机1转动到0度
+                        }
+                        else 
+                        {
+                            auto elapsed_servo = this->now() - servo_action_start_time_;
+                            control_servo(1, 0); // 舵机1转动0度
+                            if (elapsed_servo.seconds() >= 1.0) {
+                                // control_servo(1, 90); // 舵机1转动到90度
+                                RCLCPP_INFO(this->get_logger(), "go to step 10");
+                                step_ = 10;
+                                hold_position_start_ = false;  // 清除状态
+                                servo_action_started_ = false; // 重置舵机动作状态
+                            }
+
+                        }                 
+                    }        
+                }
+            break; 
+
+            case 10:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(0.0, 1.0, 0.5);
+                            RCLCPP_INFO(this->get_logger(), "reach step 10");
+                } 
+                else 
+                {
+                    publish_position(0.0, 1.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 11");
+                    step_ = 11;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;   
+
+            case 11:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(0.0, 0.0, 0.5);
+                            RCLCPP_INFO(this->get_logger(), "reach step 11");
+                } 
+                else 
+                {
+                    publish_position(0.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 12");
+                    step_ = 12;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+                    
+                
+            case 12:
+                if (!hold_position_start_) {
+                hold_pisition_start_time_ = this->now();
+                hold_position_start_ = true;
+                publish_position(0.0,0.0, 0.15);
+                    RCLCPP_INFO(this->get_logger(), "start step 12");
+                }
+                else { 
+
+                publish_position(0.0,0.0, 0.15);
+                auto elapsed = this->now() - hold_pisition_start_time_;
+
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "landed.");
+
+                    auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+
+                    arm_req->value = false;
+
+                    arming_client_->async_send_request(arm_req);
+                    // 等待 3 秒，确保 PX4 收到命令
+                    rclcpp::sleep_for(std::chrono::seconds(3));
+
+                    RCLCPP_INFO(this->get_logger(), "Disarm request sent. Shutting down...");
+
+                    rclcpp::shutdown();   // 关闭节点
+
+                    }
+                }
+                break;
+
+                
         }
-        auto t2 = this->now();
-        // RCLCPP_INFO(this->get_logger(), "%.2f ms", (t2 - t1).nanoseconds() / 1e6);
+            auto t2 = this->now();
+            // RCLCPP_INFO(this->get_logger(), "%.2f ms", (t2 - t1).nanoseconds() / 1e6);
     }
 
     void handle_init_phase() {
@@ -279,7 +446,15 @@ private:
         
 
         raw_pub->publish(message);
-
+/*
+         // 发布固定位置 setpoint 保持 FCU 接受 OFFBOARD 模式
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header.stamp = this->now();
+    pose.pose.position.x = 0.0;
+    pose.pose.position.y = 0.0;
+    pose.pose.position.z = 1.0; // 起飞目标高度
+    pose_pub_->publish(pose); // 关键：>2Hz 持续发布
+  */      
         // 模式未切换则切换
         if (current_state_.mode != "OFFBOARD") {
             if ((this->now() - last_request_time_).seconds() > 2.0) {
