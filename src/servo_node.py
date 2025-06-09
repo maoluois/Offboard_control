@@ -52,7 +52,7 @@ class DualServoController(Node):
         self.servo2.value = duty
         self.get_logger().info(f"[Servo2] Angle: {msg.data}°, Duty: {duty:.3f}")
         sleep(0.3)  # 保留信号一段时间让舵机转到位
-        self.servo1.value = 0  # 停止 PWM，避免抖动
+        self.servo2.value = 0  # 停止 PWM，避免抖动
 
     def destroy_node(self):
         self.servo1.value = 0
