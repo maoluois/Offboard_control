@@ -41,8 +41,8 @@ public:
     OffboardControl()
         : Node("offboard_control"),
           step_(0), flag_(0),
-          pid_x_(1.0, 0.0, 0.5), //分别设置三轴PID
-          pid_y_(1.0, 0.0, 0.5),
+          pid_x_(0.8, 0.0, 0.2), //分别设置三轴PID
+          pid_y_(0.8, 0.0, 0.2),
           pid_z_(1.2, 0.0, 0.35)
     {
         //状态接收器初始化
@@ -85,7 +85,7 @@ public:
         arming_client_ = this->create_client<mavros_msgs::srv::CommandBool>("mavros/cmd/arming");
 
         timer_ = this->create_wall_timer(
-            50ms, std::bind(&OffboardControl::timer_callback, this));
+            20ms, std::bind(&OffboardControl::timer_callback, this));
 
         last_request_time_ = this->now();
 
@@ -99,195 +99,161 @@ public:
 
 private:
     void timer_callback() {
+    	auto t1 = this->now();
         if (!current_state_.connected) return;
 
-        double dt = 0.05;
+        // double dt = 0.02;
         switch (step_) {
         case 0:
             handle_init_phase();
             break;
 
         case 1:
-    if (flag_ == 0) {
-        flag_ = fly_to_target(0.0, 0.0, 0.5, dt); //假设在位置（1.5.0.0.1.0投放物块）
-    } else {
-         fly_to_target(0.0, 0.0, 0.5, dt);
-        if (!hold_position_start_) {
-          hold_pisition_start_time_= this->now();
-            hold_position_start_ = true;
-            RCLCPP_INFO(this->get_logger(), "reach step 1, holding ");
-        } else {
-            // 等待 15 秒后再进入下一步
-            auto elapsed = this->now() - hold_pisition_start_time_;
-            if (elapsed.seconds() >= 3.0) {
-                RCLCPP_INFO(this->get_logger(), "go to step 2");
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 2; flag_ = 0;
-                hold_position_start_ = false;  // 清除状态
-            }
-        }
-    }
-            break;
+	
+		if (!hold_position_start_) {
+		    hold_pisition_start_time_= this->now();
+		    hold_position_start_ = true;
+            	    publish_position(0.0, 0.0, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 1");
+		} else {
 
-        case 2:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(1.0, 0.0, 0.5, dt);
-            } else {
-         fly_to_target(1.0, 0.0, 0.5, dt);
-        if (!hold_position_start_) {
-          hold_pisition_start_time_= this->now();
-            hold_position_start_ = true;
-            RCLCPP_INFO(this->get_logger(), "reach step 2, holding");
-        } else {
-            // 等待 15 秒后再进入下一步
-            auto elapsed = this->now() - hold_pisition_start_time_;
-            if (elapsed.seconds() >= 3.0) {
-                RCLCPP_INFO(this->get_logger(), "go to step 3");
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 3; flag_ = 0;
-                hold_position_start_ = false;  // 清除状态
-            }
-        }
-    }
-            break;
+                    publish_position(0.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+		    auto elapsed = this->now() - hold_pisition_start_time_;
+		    if (elapsed.seconds() >= 25.0) {
+		        RCLCPP_INFO(this->get_logger(), "go to step 2");
+		        step_ = 2;
+		        hold_position_start_ = false;  // 清除状态
+		    }
+		}
+	    
+		    break;
+		    
+	case 2:
+	
+		if (!hold_position_start_) {
+		    hold_pisition_start_time_= this->now();
+		    hold_position_start_ = true;
+            	    publish_position(1.0, 0.0, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 2");
+		} else {
+                    publish_position(1.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+		    auto elapsed = this->now() - hold_pisition_start_time_;
+		    if (elapsed.seconds() >= 8.0) {
+		        RCLCPP_INFO(this->get_logger(), "go to step 3");
+		        step_ = 3;
+		        hold_position_start_ = false;  // 清除状态
+		    }
+		}
+	    
+		    break;	
+		    
+	case 3:
+	//图片靶1,舵机投放位置 
+		if (!hold_position_start_) {
+		    hold_pisition_start_time_= this->now();
+		    hold_position_start_ = true;
+            	    publish_position(1.0, 0.0, 0.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 3");
+		} else {
+            publish_position(1.0, 0.0, 0.3); // 保持在 (0, 0, 0.15) 的位置
+		    auto elapsed = this->now() - hold_pisition_start_time_;
+		    if (elapsed.seconds() >= 5.0) {
 
-        case 3:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(0.0, 0.0, 0.5, dt);
-            } else {
-         fly_to_target(0.0, 0.0, 0.5, dt);
-        if (!hold_position_start_) {
-          hold_pisition_start_time_= this->now();
-            hold_position_start_ = true;
-            RCLCPP_INFO(this->get_logger(), "reach step 3, holding");
-        } else {
-            // 等待 15 秒后再进入下一步
-            auto elapsed = this->now() - hold_pisition_start_time_;
-            if (elapsed.seconds() >= 3.0) {
-                RCLCPP_INFO(this->get_logger(), "go to step 4");
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 4; flag_ = 0;
-                hold_position_start_ = false;  // 清除状态
-            }
-        }
-    }
-            break;            
-/*
-       case 3: 
-    if (flag_ == 0) {
-        flag_ = fly_to_target(1.5, 0.0, 0.5, dt); //假设在位置（1.5.0.0.1.0投放物块）
-    } else {
-        if (!servo_action_started_) {
-            control_servo(1,90);  // 发送舵机序号(舵机1对应GPIO 18号)和角度
-            servo_action_start_time_ = this->now();  // 记录时间
-            servo_action_started_ = true;
-            RCLCPP_INFO(this->get_logger(), "Servo turning... waiting 1s before next step");
-        } else {
-            // 等待 1 秒后再进入下一步
-            auto elapsed = this->now() - servo_action_start_time_;
-            if (elapsed.seconds() >= 1.0) {
-                RCLCPP_INFO(this->get_logger(), "Reached step 3 - servo finished");
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 4; flag_ = 0;
-                servo_action_started_ = false;  // 清除状态
-            }
-        }
-    }
-    break;
-*/
-/*       case 4:
-    if (flag_ == 0) {
-        flag_ = fly_to_target(0.0, 0.0, 0.18, dt);  // 飞机降落
-    } else {
-        RCLCPP_INFO(this->get_logger(), "landed.");
+                if(!servo_action_started_)
+                {
+                   servo_action_start_time_=this->now();  
+                   servo_action_started_=true;
+                }
+                else{
+                    auto elapsed_servo = this->now() - servo_action_start_time_;
+                    if (elapsed_servo.seconds() >= 1.0) {
+                        control_servo(1, 90); // 舵机1转动到90度
+                        control_servo(2, 90); // 舵机2转动到90度
+                        servo_action_started_ = false; // 重置舵机动作状态
+                    }
 
-        auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+                }              
+		        RCLCPP_INFO(this->get_logger(), "go to step 4");
+		        step_ = 4;
+		        hold_position_start_ = false;  // 清除状态
+		    }
+		}
+	    
+		    break;
+		    
+	case 4:
+	
+		if (!hold_position_start_) {
+		    hold_pisition_start_time_= this->now();
+		    hold_position_start_ = true;
+            	    publish_position(1.0, 0.0, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 4");
+		} else {
+                    publish_position(1.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+		    auto elapsed = this->now() - hold_pisition_start_time_;
+		    if (elapsed.seconds() >= 5.0) {
+		        RCLCPP_INFO(this->get_logger(), "go to step 5");
+		        step_ = 5;
+		        hold_position_start_ = false;  // 清除状态
+		    }
+		}
+	    
+		    break;	    		    	    
+	case 5:
+	
+		if (!hold_position_start_) {
+		    hold_pisition_start_time_= this->now();
+		    hold_position_start_ = true;
+            	    publish_position(0.0, 0.0, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 5");
+		} else {
+                    publish_position(0.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+		    auto elapsed = this->now() - hold_pisition_start_time_;
+		    if (elapsed.seconds() >= 5.0) {
+		        RCLCPP_INFO(this->get_logger(), "go to step 6");
+		        step_ = 6;
+		        hold_position_start_ = false;  // 清除状态
+		    }
+		}
+	    
+		    break;
+        
+       case 6:
+	    if (!hold_position_start_) {
+		hold_pisition_start_time_ = this->now();
+		hold_position_start_ = true;
+		publish_position(0.0,0.0, 0.15);
+        	RCLCPP_INFO(this->get_logger(), "start step 6");
+	    }
+        else { 
 
-        arm_req->value = false;
+		publish_position(0.0,0.0, 0.15);
+		auto elapsed = this->now() - hold_pisition_start_time_;
 
-         arming_client_->async_send_request(arm_req);
-        // 等待 3 秒，确保 PX4 收到命令
-        rclcpp::sleep_for(std::chrono::seconds(3));
+		if (elapsed.seconds() >= 5.0) {
+			RCLCPP_INFO(this->get_logger(), "landed.");
 
-        RCLCPP_INFO(this->get_logger(), "Disarm request sent. Shutting down...");
+			auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
 
-        rclcpp::shutdown();   // 关闭节点
-    }
-    break;*/
+			arm_req->value = false;
 
-    case 4:
+			 arming_client_->async_send_request(arm_req);
+			// 等待 3 秒，确保 PX4 收到命令
+			rclcpp::sleep_for(std::chrono::seconds(3));
 
-    if(!hold_position_start_) {
-        hold_pisition_start_time_= this->now();
+			RCLCPP_INFO(this->get_logger(), "Disarm request sent. Shutting down...");
 
-        publish_position(0.0,0.0, 0.05);
-    }else{
+			rclcpp::shutdown();   // 关闭节点
 
-        publish_position(0.0,0.0, 0.05);
-        auto elapsed = this->now() - hold_pisition_start_time_;
-
-        if (elapsed.seconds() >= 5.0) {
-        RCLCPP_INFO(this->get_logger(), "landed.");
-
-        auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
-
-        arm_req->value = false;
-
-         arming_client_->async_send_request(arm_req);
-        // 等待 3 秒，确保 PX4 收到命令
-        rclcpp::sleep_for(std::chrono::seconds(3));
-
-        RCLCPP_INFO(this->get_logger(), "Disarm request sent. Shutting down...");
-
-        rclcpp::shutdown();   // 关闭节点}
-
-        }
-    break;
+			}
+  		}
+	    break;
 
             
         }
-/*
-        case 4: {
-            double tx = 0.0, ty = 0.0, tz = 0.18;
-            double ex = tx - current_pose_.pose.position.x;
-            double ey = ty - current_pose_.pose.position.y;
-            double ez = tz - current_pose_.pose.position.z;
-
-            double vx = pid_x_.compute(tx, current_pose_.pose.position.x, current_vel_.twist.linear.x, dt);
-            double vy = pid_y_.compute(ty, current_pose_.pose.position.y, current_vel_.twist.linear.y, dt);
-            double vz = pid_z_.compute(tz, current_pose_.pose.position.z, current_vel_.twist.linear.z, dt);
-
-            // 低于 0.3 米时锁定横向速度，避免偏移
-            if (current_pose_.pose.position.z < 0.3) {
-                vx = 0.0;
-                vy = 0.0;
-            }
-
-            publish_velocity(vx, vy, vz);
-            RCLCPP_INFO(this->get_logger(), "Landing... vx=%.2f vy=%.2f vz=%.2f", vx, vy, vz);
-
-            double horizontal_dist = std::hypot(ex, ey);
-            double vertical_error = std::abs(ez);
-
-            // 当位置基本对准并达到高度，认为降落完成
-            if (horizontal_dist < 0.1 && vertical_error < 0.03) {
-                RCLCPP_INFO(this->get_logger(), "Landing complete, disarming...");
-
-                auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
-                arm_req->value = false;
-                arming_client_->async_send_request(arm_req);
-
-                rclcpp::sleep_for(std::chrono::seconds(3));
-                rclcpp::shutdown();
-            }
-
-            break;
-        }
-*/
-
-
+        auto t2 = this->now();
+        // RCLCPP_INFO(this->get_logger(), "%.2f ms", (t2 - t1).nanoseconds() / 1e6);
     }
-}
 
     void handle_init_phase() {
             auto message = mavros_msgs::msg::PositionTarget();
@@ -309,19 +275,11 @@ private:
         // 设置初始位置
         message.position.x = 0.0;
         message.position.y = 0.0;
-        message.position.z = 0.18;  // 设置一个小的高度作为初始目标
+        message.position.z = 0.12;  // 设置一个小的高度作为初始目标
         
 
         raw_pub->publish(message);
-/*
-         // 发布固定位置 setpoint 保持 FCU 接受 OFFBOARD 模式
-    geometry_msgs::msg::PoseStamped pose;
-    pose.header.stamp = this->now();
-    pose.pose.position.x = 0.0;
-    pose.pose.position.y = 0.0;
-    pose.pose.position.z = 1.0; // 起飞目标高度
-    pose_pub_->publish(pose); // 关键：>2Hz 持续发布
-  */      
+
         // 模式未切换则切换
         if (current_state_.mode != "OFFBOARD") {
             if ((this->now() - last_request_time_).seconds() > 2.0) {
@@ -377,6 +335,7 @@ private:
 
 
     int fly_to_target(double tx, double ty, double tz, double dt) {
+    	
         double ex = tx - current_pose_.pose.position.x;
         double ey = ty - current_pose_.pose.position.y;
         double ez = tz - current_pose_.pose.position.z;
@@ -387,10 +346,20 @@ private:
 
         publish_velocity(vx, vy, vz);
         //输出速度
-        RCLCPP_INFO(this->get_logger(), "vx = %.2lf vy = %.2lf vz = %.2lf",vx,vy,vz);
+        // RCLCPP_INFO(this->get_logger(), "vx = %.2lf vy = %.2lf vz = %.2lf",vx,vy,vz);
         
-        double dist = std::sqrt(ex * ex + ey * ey + ez * ez);
-        return (dist < 0.1) ? 1 : 0;
+        double dist_x = std::fabs(ex);
+        double dist_y = std::fabs(ez);
+        double dist_z = std::fabs(ey);
+        
+        if (dist_x <= 0.15 && dist_y <= 0.15 && dist_z <= 0.05) 
+        {
+            return 1;
+        } 
+        else 
+        { 
+	    return 0;
+        }
     }
 
     void publish_velocity(double vx, double vy, double vz) {
@@ -419,7 +388,7 @@ private:
         // 发布速度命令
         raw_pub->publish(message);
     }
-
+    
     void publish_position(double px, double py, double pz) {
         auto message = mavros_msgs::msg::PositionTarget();
         message.header.stamp = this->now();
@@ -450,7 +419,6 @@ private:
     //舵机控制函数，直接输入要转动的角度
     void control_servo(int num,int angle) {
     std_msgs::msg::Int32 msg;
-    //角度，单位是°
     msg.data = angle;
     if(num==1)
     {
