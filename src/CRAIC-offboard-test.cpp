@@ -113,12 +113,12 @@ private:
             if (!hold_position_start_) {
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(0.0, 0.0, 0.5);
+                publish_position(0.0, 0.0, 1.0);
                 RCLCPP_INFO(this->get_logger(), "reach step 1");
             } 
             else 
             {
-                publish_position(0.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                publish_position(0.0, 0.0, 1.0); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 20.0) {
                     RCLCPP_INFO(this->get_logger(), "go to step 2");
@@ -129,19 +129,19 @@ private:
             
             break;
                 
-            case 2:
+            case 2: // 二维码
             
             if (!hold_position_start_) {
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.0, 0.0, 0.5);
+                publish_position(1.79, 0.0, 1.0);
                 RCLCPP_INFO(this->get_logger(), "reach step 2");
             } 
             else 
             {
-                publish_position(1.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                publish_position(1.79, 0.0, 1.0); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
-                if (elapsed.seconds() >= 5.0) {
+                if (elapsed.seconds() >= 10.0) {
                     RCLCPP_INFO(this->get_logger(), "go to step 3");
                     step_ = 3;
                     hold_position_start_ = false;  // 清除状态
@@ -149,18 +149,39 @@ private:
             }
         
             break;	
+
+            case 3: 
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(1.74, 1.64, 1.0);
+                RCLCPP_INFO(this->get_logger(), "reach step 3");
+            } 
+            else 
+            {
+                publish_position(1.74, 1.64, 1.0); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 4");
+                    step_ = 4;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
+            break;
                 
-            case 3:
+            case 4:
             //图片靶1,舵机投放位置 
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(1.0, 0.0, 0.3);
-                    RCLCPP_INFO(this->get_logger(), "reach step 3");
+                    publish_position(1.74, 1.64, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 4");
                 } 
                 else 
                 {
-                    publish_position(1.0, 0.0, 0.3); // 保持在 (0, 0, 0.15) 的位置
+                    publish_position(1.74, 1.64, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 3.0) {
 
@@ -176,8 +197,8 @@ private:
                             control_servo(2, 120); 
                             if (elapsed_servo.seconds() >= 1.0) {
                                 // control_servo(1, 90); // 舵机1转动到90度
-                                RCLCPP_INFO(this->get_logger(), "go to step 4");
-                                step_ = 4;
+                                RCLCPP_INFO(this->get_logger(), "go to step 5");
+                                step_ = 5;
                                 hold_position_start_ = false;  // 清除状态
                                 servo_action_started_ = false; // 重置舵机动作状态
                             }
@@ -188,57 +209,57 @@ private:
                 
             break;
                 
-            case 4:
-            
-                if (!hold_position_start_) {
-                    hold_pisition_start_time_= this->now();
-                    hold_position_start_ = true;
-                    publish_position(1.0, 0.0, 0.5);
-                    RCLCPP_INFO(this->get_logger(), "reach step 4");
-                } 
-                else 
-                {
-                    publish_position(1.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
-                    auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
-                        RCLCPP_INFO(this->get_logger(), "go to step 5");
-                        step_ = 5;
-                        hold_position_start_ = false;  // 清除状态
-                    }
-                }
-                
-            break;	 
-
             case 5:
             
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(1.0, 1.0, 0.5);
+                    publish_position(1.74, 1.64, 1.0);
                     RCLCPP_INFO(this->get_logger(), "reach step 5");
                 } 
                 else 
                 {
-                    publish_position(1.0, 1.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    publish_position(1.74, 1.64, 1.0); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 5.0) {
+                    if (elapsed.seconds() >= 3.0) {
                         RCLCPP_INFO(this->get_logger(), "go to step 6");
                         step_ = 6;
                         hold_position_start_ = false;  // 清除状态
                     }
                 }
                 
-            break;
+            break;	 
 
             case 6:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(3.54, 1.70, 1.0);
+                    RCLCPP_INFO(this->get_logger(), "reach step 6");
+                } 
+                else 
+                {
+                    publish_position(3.54, 1.70, 1.0); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 7");
+                        step_ = 7;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 7:
             //图片靶2,舵机投放位置 
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                            publish_position(1.0, 1.0, 0.3);
-                            RCLCPP_INFO(this->get_logger(), "reach step 6");
+                            publish_position(3.54, 1.70, 0.5);
+                            RCLCPP_INFO(this->get_logger(), "reach step 7");
                 } else {
-                    publish_position(1.0, 1.0, 0.3); 
+                    publish_position(3.54, 1.70, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 3.0) {
 
@@ -254,8 +275,8 @@ private:
                             control_servo(2, 50); // 舵机2转动到0度
                             if (elapsed_servo.seconds() >= 1.0) {
                                 // control_servo(1, 90); // 舵机1转动到90度
-                                RCLCPP_INFO(this->get_logger(), "go to step 7");
-                                step_ = 7;
+                                RCLCPP_INFO(this->get_logger(), "go to step 8");
+                                step_ = 8;
                                 hold_position_start_ = false;  // 清除状态
                                 servo_action_started_ = false; // 重置舵机动作状态
                             }
@@ -266,56 +287,56 @@ private:
                 
             break;
 
-            case 7:
+            case 8:
             
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                            publish_position(1.0, 1.0, 0.5);
-                            RCLCPP_INFO(this->get_logger(), "reach step 7");
+                            publish_position(3.54, 1.70, 1.0);
+                            RCLCPP_INFO(this->get_logger(), "reach step 8");
                 } else {
                 
-                            publish_position(1.0, 1.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                            publish_position(3.54, 1.70, 1.0); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 3.0) {
-                        RCLCPP_INFO(this->get_logger(), "go to step 8");
-                        step_ = 8;
+                        RCLCPP_INFO(this->get_logger(), "go to step 9");
+                        step_ = 9;
                         hold_position_start_ = false;  // 清除状态
                     }
                 }
                 
             break;
 
-            case 8:
+            case 9:
             
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                            publish_position(0.0, 1.0, 0.5);
-                            RCLCPP_INFO(this->get_logger(), "reach step 8");
+                            publish_position(5.97, 1.16, 1.0);
+                            RCLCPP_INFO(this->get_logger(), "reach step 9");
                 } 
                 else 
                 {
-                    publish_position(0.0, 1.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    publish_position(5.97, 1.16, 1.0); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 5.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to step 9");
-                    step_ = 9;
+                    if (elapsed.seconds() >= 10.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 10");
+                    step_ = 10;
                     hold_position_start_ = false;  // 清除状态
                     }
                 }
                 
             break;
 
-            case 9:
-            //图片靶3,舵机投放位置 
+            case 10:
+            // 特殊把,舵机投放位置 
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                            publish_position(0.0, 1.0, 0.3);
-                            RCLCPP_INFO(this->get_logger(), "reach step 9");
+                            publish_position(5.97, 1.16, 0.5);
+                            RCLCPP_INFO(this->get_logger(), "reach step 10");
                 } else {
-                    publish_position(0.0, 1.0, 0.3); 
+                    publish_position(5.97, 1.16, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 3.0) {
 
@@ -331,8 +352,8 @@ private:
                             control_servo(1, 0); // 舵机1转动0度
                             if (elapsed_servo.seconds() >= 1.0) {
                                 // control_servo(1, 90); // 舵机1转动到90度
-                                RCLCPP_INFO(this->get_logger(), "go to step 10");
-                                step_ = 10;
+                                RCLCPP_INFO(this->get_logger(), "go to step 11");
+                                step_ = 11;
                                 hold_position_start_ = false;  // 清除状态
                                 servo_action_started_ = false; // 重置舵机动作状态
                             }
@@ -342,62 +363,209 @@ private:
                 }
             break; 
 
-            case 10:
-            
-                if (!hold_position_start_) {
-                    hold_pisition_start_time_= this->now();
-                    hold_position_start_ = true;
-                            publish_position(0.0, 1.0, 0.5);
-                            RCLCPP_INFO(this->get_logger(), "reach step 10");
-                } 
-                else 
-                {
-                    publish_position(0.0, 1.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
-                    auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to step 11");
-                    step_ = 11;
-                    hold_position_start_ = false;  // 清除状态
-                    }
-                }
-                
-            break;   
-
             case 11:
             
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                            publish_position(0.0, 0.0, 0.5);
-                            RCLCPP_INFO(this->get_logger(), "reach step 11");
+                    publish_position(5.97, 1.16, 1.0);
+                    RCLCPP_INFO(this->get_logger(), "reach step 11");
                 } 
                 else 
                 {
-                    publish_position(0.0, 0.0, 0.5); // 保持在 (0, 0, 0.15) 的位置
+                    publish_position(5.97, 1.16, 1.0); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 5.0) {
+                    if (elapsed.seconds() >= 3.0) {
                     RCLCPP_INFO(this->get_logger(), "go to step 12");
                     step_ = 12;
                     hold_position_start_ = false;  // 清除状态
                     }
                 }
                 
-            break;
-                    
+            break;   
+
+            case 12: // 穿圆环起点
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.03, -0.73, 1.0);
+                    RCLCPP_INFO(this->get_logger(), "reach step 12");
+                } 
+                else 
+                {
+                    publish_position(6.03, -0.73, 1.0); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 13");
+                    step_ = 13;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
                 
-            case 12:
+            break;
+
+            case 13: // 穿圆环起点
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.03, -0.73, 1.78);
+                    RCLCPP_INFO(this->get_logger(), "reach step 13");
+                } 
+                else 
+                {
+                    publish_position(6.03, -0.73, 1.78); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 14");
+                    step_ = 14;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 14: // 穿圆环终点
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.00, -2.27, 1.78);
+                    RCLCPP_INFO(this->get_logger(), "reach step 14");
+                } 
+                else 
+                {
+                    publish_position(6.00, -2.27, 1.78); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 15");
+                    step_ = 15;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 15: // 穿圆环终点
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.00, -2.27, 1.0);
+                    RCLCPP_INFO(this->get_logger(), "reach step 15");
+                } 
+                else 
+                {
+                    publish_position(6.00, -2.27, 1.0); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 16");
+                    step_ = 16;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 16: 
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(4.25, -2.30, 1.0);
+                    RCLCPP_INFO(this->get_logger(), "reach step 16");
+                } 
+                else 
+                {
+                    publish_position(4.25, -2.30, 1.0); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 17");
+                    step_ = 17;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break; 
+
+            case 17: 
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.84, -1.56, 1.0);
+                    RCLCPP_INFO(this->get_logger(), "reach step 17");
+                } 
+                else 
+                {
+                    publish_position(1.84, -1.56, 1.0); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 18");
+                    step_ = 18;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;    
+
+            case 18: // 二维码
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(1.79, 0.0, 1.0);
+                RCLCPP_INFO(this->get_logger(), "reach step 18");
+            } 
+            else 
+            {
+                publish_position(1.79, 0.0, 1.0); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 19");
+                    step_ = 19;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
+            break;	
+
+            case 19: // 原点
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(0.0, 0.0, 1.0);
+                RCLCPP_INFO(this->get_logger(), "reach step 19");
+            } 
+            else 
+            {
+                publish_position(0.0, 0.0, 1.0); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 20");
+                    step_ = 20;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
+            break;  
+
+           
+            case 20: // 左降落点1.6 右降落点-1.6
                 if (!hold_position_start_) {
                 hold_pisition_start_time_ = this->now();
                 hold_position_start_ = true;
-                publish_position(0.0,0.0, 0.15);
-                    RCLCPP_INFO(this->get_logger(), "start step 12");
+                publish_position(0.0, 1.60, 0.21);
+                    RCLCPP_INFO(this->get_logger(), "start step 18");
                 }
                 else { 
 
-                publish_position(0.0,0.0, 0.15);
+                publish_position(0.0, 1.60, 0.21);
                 auto elapsed = this->now() - hold_pisition_start_time_;
 
-                if (elapsed.seconds() >= 5.0) {
+                if (elapsed.seconds() >= 10.0) {
                     RCLCPP_INFO(this->get_logger(), "landed.");
 
                     auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
