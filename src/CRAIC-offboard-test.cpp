@@ -258,12 +258,12 @@ private:
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(1.84, -1.56, 1.3);
+                    publish_position(1.79, -1.63, 1.3);
                     RCLCPP_INFO(this->get_logger(), "reach step 5");
                 } 
                 else 
                 {
-                    publish_position(1.84, -1.56, 1.3); 
+                    publish_position(1.79, -1.63, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 5.0) {
                         RCLCPP_INFO(this->get_logger(), "go to step 501");
@@ -279,12 +279,12 @@ private:
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(1.84, -1.56, 0.5);
+                    publish_position(1.79, -1.63, 0.5);
                     RCLCPP_INFO(this->get_logger(), "reach step 501");
                 } 
                 else 
                 {
-                    publish_position(1.84, -1.56, 0.5); 
+                    publish_position(1.79, -1.63, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 3.0) {
 
@@ -318,12 +318,12 @@ private:
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(1.84, -1.56, 1.3);
+                    publish_position(1.79, -1.63, 1.3);
                     RCLCPP_INFO(this->get_logger(), "reach step 502");
                 } 
                 else 
                 {
-                    publish_position(1.84, -1.56, 1.3); 
+                    publish_position(1.79, -1.63, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 3.0) {
                         RCLCPP_INFO(this->get_logger(), "go to step 6");
@@ -339,12 +339,12 @@ private:
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(4.25, -2.30, 1.3);
+                    publish_position(3.58, -1.65, 1.3);
                     RCLCPP_INFO(this->get_logger(), "reach step 6");
                 } 
                 else 
                 {
-                    publish_position(4.25, -2.30, 1.3); 
+                    publish_position(3.58, -1.65, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 5.0) {
                         RCLCPP_INFO(this->get_logger(), "go to step 601");
@@ -361,12 +361,12 @@ private:
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(4.25, -2.30, 0.5);
+                    publish_position(3.58, -1.65, 0.5);
                     RCLCPP_INFO(this->get_logger(), "reach step 601");
                 } 
                 else 
                 {
-                    publish_position(4.25, -2.30, 0.5); 
+                    publish_position(3.58, -1.65, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 3.0) {
 
@@ -401,12 +401,12 @@ private:
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(4.25, -2.30, 1.3);
+                    publish_position(3.58, -1.65, 1.3);
                     RCLCPP_INFO(this->get_logger(), "reach step 602");
                 } 
                 else 
                 {
-                    publish_position(4.25, -2.30, 1.3); 
+                    publish_position(3.58, -1.65, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 3.0) {
                         RCLCPP_INFO(this->get_logger(), "go to step 7");
@@ -598,12 +598,12 @@ private:
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
-                    publish_position(6.08, -0.73, 1.3);
+                    publish_position(6.10, -0.73, 1.3);
                     RCLCPP_INFO(this->get_logger(), "reach step 10");
                 } 
                 else 
                 {
-                    publish_position(6.08, -0.73, 1.3); 
+                    publish_position(6.10, -0.73, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to step 11");
@@ -677,42 +677,42 @@ private:
                 
             break;
 
-            case 14: // 图片靶3
+            case 14:
             
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
                     publish_position(4.25, -2.30, 1.3);
-                    RCLCPP_INFO(this->get_logger(), "reach step 16");
+                    RCLCPP_INFO(this->get_logger(), "reach step 14");
                 } 
                 else 
                 {
                     publish_position(4.25, -2.30, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 5.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to step 17");
-                    step_ = 17;
+                    RCLCPP_INFO(this->get_logger(), "go to step 15");
+                    step_ = 15;
                     hold_position_start_ = false;  // 清除状态
                     }
                 }
                 
             break; 
 
-            case 15: // 图片靶4
+            case 15: 
             
                 if (!hold_position_start_) {
                     hold_pisition_start_time_= this->now();
                     hold_position_start_ = true;
                     publish_position(1.84, -1.56, 1.3);
-                    RCLCPP_INFO(this->get_logger(), "reach step 17");
+                    RCLCPP_INFO(this->get_logger(), "reach step 15");
                 } 
                 else 
                 {
                     publish_position(1.84, -1.56, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
                     if (elapsed.seconds() >= 5.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to step 18");
-                    step_ = 18;
+                    RCLCPP_INFO(this->get_logger(), "go to step 16");
+                    step_ = 16;
                     hold_position_start_ = false;  // 清除状态
                     }
                 }
@@ -725,15 +725,15 @@ private:
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
                 publish_position(1.79, 0.0, 1.3);
-                RCLCPP_INFO(this->get_logger(), "reach step 18");
+                RCLCPP_INFO(this->get_logger(), "reach step 16");
             } 
             else 
             {
                 publish_position(1.79, 0.0, 1.3); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to step 19");
-                    step_ = 19;
+                    RCLCPP_INFO(this->get_logger(), "go to step 17");
+                    step_ = 17;
                     hold_position_start_ = false;  // 清除状态
                 }
             }
@@ -746,15 +746,15 @@ private:
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
                 publish_position(0.0, 0.0, 1.3);
-                RCLCPP_INFO(this->get_logger(), "reach step 19");
+                RCLCPP_INFO(this->get_logger(), "reach step 17");
             } 
             else 
             {
                 publish_position(0.0, 0.0, 1.3); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to step 20");
-                    step_ = 20;
+                    RCLCPP_INFO(this->get_logger(), "go to step 18");
+                    step_ = 18;
                     hold_position_start_ = false;  // 清除状态
                 }
             }
@@ -767,15 +767,15 @@ private:
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
                 publish_position(0.0, 1.6, 1.3);
-                RCLCPP_INFO(this->get_logger(), "reach step 20");
+                RCLCPP_INFO(this->get_logger(), "reach step 18");
             } 
             else 
             {
                 publish_position(0.0, 1.6, 1.3); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to step 21");
-                    step_ = 21;
+                    RCLCPP_INFO(this->get_logger(), "go to step 19");
+                    step_ = 19;
                     hold_position_start_ = false;  // 清除状态
                 }
             }
@@ -787,7 +787,7 @@ private:
                 hold_pisition_start_time_ = this->now();
                 hold_position_start_ = true;
                 publish_position(0.0, 1.60, 0.21);
-                    RCLCPP_INFO(this->get_logger(), "start step 18");
+                    RCLCPP_INFO(this->get_logger(), "start step 19");
                 }
                 else { 
 
