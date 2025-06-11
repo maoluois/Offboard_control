@@ -134,14 +134,14 @@ private:
             if (!hold_position_start_) {
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.0, 1.23);
+                publish_position(1.80, 0.20, 1.0);
                 RCLCPP_INFO(this->get_logger(), "reach step 2");
             } 
             else 
             {
-                publish_position(1.80, 0.0, 1.23); 
+                publish_position(1.80, 0.20, 1.0); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
-                if (elapsed.seconds() >= 10.0) {
+                if (elapsed.seconds() >= 15.0) {
                     RCLCPP_INFO(this->get_logger(), "go to step 3");
                     step_ = 3;
                     hold_position_start_ = false;  // 清除状态
@@ -184,19 +184,19 @@ private:
                 {
                     publish_position(1.74, 1.53, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
 
                         if(!servo_action_started_)
                         {
                         servo_action_start_time_=this->now();  
                         servo_action_started_=true;
-                        control_servo(2, 120); 
+                        control_servo(2, 80); 
                         }
                         else 
                         {
                             auto elapsed_servo = this->now() - servo_action_start_time_;
-                            control_servo(2, 120); 
-                            if (elapsed_servo.seconds() >= 1.0) {
+                            control_servo(2, 80); 
+                            if (elapsed_servo.seconds() >= 0.6) {
                                 // control_servo(1, 90); // 舵机1转动到90度
                                 RCLCPP_INFO(this->get_logger(), "go to step 301");
                                 step_ = 302;
@@ -222,7 +222,7 @@ private:
                 {
                     publish_position(1.74, 1.53, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
                         RCLCPP_INFO(this->get_logger(), "go to step 4");
                         step_ = 4;
                         hold_position_start_ = false;  // 清除状态
@@ -286,21 +286,21 @@ private:
                 {
                     publish_position(1.79, -1.63, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
 
                         if(!servo_action_started_)
                         {
                         servo_action_start_time_=this->now();  
                         servo_action_started_=true;
-                        control_servo(2, 120); 
+                        control_servo(2, 80); 
                         // control_servo(2, 50);   
                         }
                         else 
                         {
                             auto elapsed_servo = this->now() - servo_action_start_time_;
-                            control_servo(2, 120); 
+                            control_servo(2, 80); 
                             // control_servo(2, 50); 
-                            if (elapsed_servo.seconds() >= 1.0) {
+                            if (elapsed_servo.seconds() >= 0.6) {
                                 RCLCPP_INFO(this->get_logger(), "go to step 502");
                                 step_ = 502;
                                 hold_position_start_ = false;  // 清除状态
@@ -325,7 +325,7 @@ private:
                 {
                     publish_position(1.79, -1.63, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
                         RCLCPP_INFO(this->get_logger(), "go to step 6");
                         step_ = 6;
                         hold_position_start_ = false;  // 清除状态
@@ -368,21 +368,21 @@ private:
                 {
                     publish_position(3.58, -1.65, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
 
                         if(!servo_action_started_)
                         {
                         servo_action_start_time_=this->now();  
                         servo_action_started_=true;
-                        control_servo(2, 120); 
+                        control_servo(2, 80); 
                         // control_servo(2, 50);
                         }
                         else 
                         {
                             auto elapsed_servo = this->now() - servo_action_start_time_;
-                            control_servo(2, 120); 
+                            control_servo(2, 80); 
                             // control_servo(2, 50); 
-                            if (elapsed_servo.seconds() >= 1.0) {
+                            if (elapsed_servo.seconds() >= 0.6) {
                                 // control_servo(1, 90); // 舵机1转动到90度
                                 RCLCPP_INFO(this->get_logger(), "go to step 602");
                                 step_ = 602;
@@ -408,7 +408,7 @@ private:
                 {
                     publish_position(3.58, -1.65, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
                         RCLCPP_INFO(this->get_logger(), "go to step 7");
                         step_ = 7;
                         hold_position_start_ = false;  // 清除状态
@@ -470,7 +470,7 @@ private:
                 } else {
                     publish_position(3.55, 1.53, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
 
                         if(!servo_action_started_)
                         {
@@ -482,8 +482,7 @@ private:
                         {
                             auto elapsed_servo = this->now() - servo_action_start_time_;
                             control_servo(2, 50); // 舵机2转动到0度
-                            if (elapsed_servo.seconds() >= 1.0) {
-                                // control_servo(1, 90); // 舵机1转动到90度
+                            if (elapsed_servo.seconds() >= 0.6) {
                                 RCLCPP_INFO(this->get_logger(), "go to step 802");
                                 step_ = 802;
                                 hold_position_start_ = false;  // 清除状态
@@ -507,7 +506,7 @@ private:
                 
                     publish_position(3.55, 1.53, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
                         RCLCPP_INFO(this->get_logger(), "go to step 9");
                         step_ = 9;
                         hold_position_start_ = false;  // 清除状态
@@ -547,7 +546,7 @@ private:
                 } else {
                     publish_position(6.02, 1.05, 0.5); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
 
                         if(!servo_action_started_)
                         {
@@ -559,7 +558,7 @@ private:
                         {
                             auto elapsed_servo = this->now() - servo_action_start_time_;
                             control_servo(1, 0); // 舵机1转动0度
-                            if (elapsed_servo.seconds() >= 1.0) {
+                            if (elapsed_servo.seconds() >= 0.6) {
                                 // control_servo(1, 90); // 舵机1转动到90度
                                 RCLCPP_INFO(this->get_logger(), "go to step 902");
                                 step_ = 902;
@@ -584,7 +583,7 @@ private:
                 {
                     publish_position(6.02, 1.05, 1.3); 
                     auto elapsed = this->now() - hold_pisition_start_time_;
-                    if (elapsed.seconds() >= 3.0) {
+                    if (elapsed.seconds() >= 3.9) {
                     RCLCPP_INFO(this->get_logger(), "go to step 10");
                     step_ = 10;
                     hold_position_start_ = false;  // 清除状态
