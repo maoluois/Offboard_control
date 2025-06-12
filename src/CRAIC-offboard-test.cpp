@@ -246,7 +246,7 @@ private:
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to step 5");
                     step_ = 5;
-                    // step_ = 6;
+                    
                     hold_position_start_ = false;  // 清除状态
                 }
             }
@@ -268,6 +268,7 @@ private:
                     if (elapsed.seconds() >= 5.0) {
                         RCLCPP_INFO(this->get_logger(), "go to step 501");
                         step_ = 501;
+                        // step_ = 6;
                         hold_position_start_ = false;  // 清除状态
                     }
                 }
