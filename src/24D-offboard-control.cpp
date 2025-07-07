@@ -10,6 +10,9 @@
 #include <thread>
 #include "rclcpp/qos.hpp"
 #include "std_msgs/msg/int32.hpp"
+#include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 
 using namespace std::chrono_literals;
 
@@ -676,11 +679,12 @@ private:
     //步进电机控制函数，直接输入要转动的角度
 void control_angle(int angle) {
     std_msgs::msg::Float64 msg;
-    msg.data = angle;
-    cam_angle_pub_->publish(angle);
+    msg.data = static_cast<double>(angle);  // 转换为 double 类型
+    cam_angle_pub_->publish(msg);  // 发布消息
 
     RCLCPP_INFO(this->get_logger(), "usb cam turned to %d", angle);
 }
+
 
     void control_laser_pointer(int flag,int time) {
         auto message = std_msgs::msg::Float64MultiArray();
@@ -745,6 +749,8 @@ void control_angle(int angle) {
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_sub_;
 
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr task_subscription_;
+    
+    rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr qr_data_subscription_;
    
     //  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
 
