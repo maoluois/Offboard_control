@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
+#include "mavros_msgs/msg/position_target.hpp"
 #include "mavros_msgs/msg/state.hpp"
 #include "mavros_msgs/srv/set_mode.hpp"
 #include "mavros_msgs/srv/command_bool.hpp"
@@ -40,9 +41,9 @@ public:
     OffboardControl()
         : Node("offboard_control"),
           step_(0), flag_(0),
-          pid_x_(0.8, 0.1, 0.2), //分别设置三轴PID
-          pid_y_(0.8, 0.1, 0.2),
-          pid_z_(0.8, 0.1, 0.1)
+          pid_x_(0.8, 0.0, 0.2), //分别设置三轴PID
+          pid_y_(0.8, 0.0, 0.2),
+          pid_z_(1.2, 0.0, 0.35)
     {
         //状态接收器初始化
         state_sub_ = this->create_subscription<mavros_msgs::msg::State>(
@@ -67,10 +68,13 @@ public:
            });        
 
         //姿态发布器初始化
-        pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-            "mavros/setpoint_position/local", 10);
-        vel_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
-            "mavros/setpoint_velocity/cmd_vel", 10);
+         //pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+          //   "mavros/setpoint_position/local", 10);
+
+        // vel_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
+        //     "mavros/setpoint_velocity/cmd_vel", 10);
+        raw_pub = this->create_publisher<mavros_msgs::msg::PositionTarget>(
+            "mavros/setpoint_raw/local", 10);
         //舵机控制初始化
         servo1_pub_ = this->create_publisher<std_msgs::msg::Int32>("servo1_cmd", 10);
 
@@ -81,7 +85,7 @@ public:
         arming_client_ = this->create_client<mavros_msgs::srv::CommandBool>("mavros/cmd/arming");
 
         timer_ = this->create_wall_timer(
-            100ms, std::bind(&OffboardControl::timer_callback, this));
+            20ms, std::bind(&OffboardControl::timer_callback, this));
 
         last_request_time_ = this->now();
 
@@ -92,129 +96,793 @@ public:
 
     bool is_connected() const { return current_state_.connected; }
 
+
 private:
     void timer_callback() {
+    	auto t1 = this->now();
         if (!current_state_.connected) return;
 
-        double dt = 0.1;
+        // double dt = 0.02;
         switch (step_) {
-        case 0:
-            handle_init_phase();
+            case 0:
+                handle_init_phase();
+                break;
+
+            case 1:
+        
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(0.0, 0.0, 1.3);
+                RCLCPP_INFO(this->get_logger(), "reach step 1");
+            } 
+            else 
+            {
+                publish_position(0.0, 0.0, 1.3); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 15.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 2");
+                    step_ = 2;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+            
             break;
-        case 1:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(0.0, 0.0, 1.0, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 1");
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 2; flag_ = 0;
+                
+            case 2: // 二维码
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(1.80, 0.20, 1.3);
+                RCLCPP_INFO(this->get_logger(), "reach step 2");
+            } 
+            else 
+            {
+                publish_position(1.80, 0.20, 1.3); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 15.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 3");
+                    step_ = 3;
+                    hold_position_start_ = false;  // 清除状态
+                }
             }
+        
+            break;	
+
+            case 3: 
+            //图片靶1,舵机投放位置
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(1.74, 1.53, 1.3);
+                RCLCPP_INFO(this->get_logger(), "reach step 3");
+            } 
+            else 
+            {
+                publish_position(1.74, 1.53, 1.3); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 301");
+                    step_ = 301;
+                    //step_ = 4;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
             break;
-        case 2:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(1.0, 0.0, 1.0, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 2");
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 3; flag_ = 0;
-            }
+                
+            case 301:
+             
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.74, 1.53, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 301");
+                } 
+                else 
+                {
+                    publish_position(1.74, 1.53, 0.5); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+
+                        if(!servo_action_started_)
+                        {
+                        servo_action_start_time_=this->now();  
+                        servo_action_started_=true;
+                        control_servo(2, 80); 
+                        }
+                        else 
+                        {
+                            auto elapsed_servo = this->now() - servo_action_start_time_;
+                            control_servo(2, 80); 
+                            if (elapsed_servo.seconds() >= 0.6) {
+                                // control_servo(1, 90); // 舵机1转动到90度
+                                RCLCPP_INFO(this->get_logger(), "go to step 301");
+                                step_ = 302;
+                                hold_position_start_ = false;  // 清除状态
+                                servo_action_started_ = false; // 重置舵机动作状态
+                            }
+
+                        }                 
+                    }        
+                }
+                
             break;
-       case 3: 
-    if (flag_ == 0) {
-        flag_ = fly_to_target(1.5, 0.0, 1.0, dt); //假设在位置（1.5.0.0.1.0投放物块）
-    } else {
-        if (!servo_action_started_) {
-            control_servo(1,90);  // 发送舵机角度
-            servo_action_start_time_ = this->now();  // 记录时间
-            servo_action_started_ = true;
-            RCLCPP_INFO(this->get_logger(), "Servo turning... waiting 1s before next step");
-        } else {
-            // 等待 1 秒后再进入下一步
-            auto elapsed = this->now() - servo_action_start_time_;
-            if (elapsed.seconds() >= 1.0) {
-                RCLCPP_INFO(this->get_logger(), "Reached step 3 - servo finished");
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 4; flag_ = 0;
-                servo_action_started_ = false;  // 清除状态
+                
+            case 302:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.74, 1.53, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 302");
+                } 
+                else 
+                {
+                    publish_position(1.74, 1.53, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 4");
+                        step_ = 4;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;	 
+
+            case 4: // 二维码
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(1.80, 0.0, 1.30);
+                RCLCPP_INFO(this->get_logger(), "reach step 4");
+            } 
+            else 
+            {
+                publish_position(1.80, 0.0, 1.30); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 5");
+                    step_ = 5;
+                    
+                    hold_position_start_ = false;  // 清除状态
+                }
             }
-        }
-    }
-    break;
-        case 4:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(1.0, 0.0, 1.0, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 4. Holding position.");
-                //误差指令，准备计算下一个点的PID
-                pid_x_.reset(); pid_y_.reset(); pid_z_.reset();
-                step_ = 5; flag_ = 0;
-            }
-            break;
-        case 5:
-            if (flag_ == 0) {
-                flag_ = fly_to_target(0.0, 0.0, 1.0, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "Reached step 5. Holding position.");
-                publish_velocity(0, 0, 0);
-                step_ = 6; flag_ = 0;
-            }
+        
+            break;	
+
+            case 5: //图片靶2,舵机投放位置
+             
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.79, -1.63, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 5");
+                } 
+                else 
+                {
+                    publish_position(1.79, -1.63, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 501");
+                        step_ = 501;
+                        // step_ = 6;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
             break;
 
-        case 6:
-        //降落
-            if (flag_ == 0) {
-                flag_ = fly_to_target(0.0, 0.0, 0.0, dt);
-            } else {
-                RCLCPP_INFO(this->get_logger(), "landing.");
-                if (arm_drone(false)) {   // 尝试上锁
-                RCLCPP_INFO(this->get_logger(), "Drone disarmed");}
-                rclcpp::shutdown();   // 关闭节点
-                step_ = 7; flag_ = 0;
-            }            
+            case 501:  
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.79, -1.63, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 501");
+                } 
+                else 
+                {
+                    publish_position(1.79, -1.63, 0.5); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+
+                        if(!servo_action_started_)
+                        {
+                        servo_action_start_time_=this->now();  
+                        servo_action_started_=true;
+                        //control_servo(2, 80); 
+                        control_servo(2, 0);   
+                        }
+                        else 
+                        {
+                            auto elapsed_servo = this->now() - servo_action_start_time_;
+                            //control_servo(2, 80); 
+                            control_servo(2, 0); 
+                            if (elapsed_servo.seconds() >= 0.6) {
+                                RCLCPP_INFO(this->get_logger(), "go to step 502");
+                                step_ = 502;
+                                hold_position_start_ = false;  // 清除状态
+                                servo_action_started_ = false; // 重置舵机动作状态
+                            }
+
+                        }                 
+                    }        
+                }
+                
             break;
+                
+            case 502:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.79, -1.63, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 502");
+                } 
+                else 
+                {
+                    publish_position(1.79, -1.63, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 6");
+                        step_ = 6;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;	
+             
+            case 6: //图片靶3,舵机投放位置
+             
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(3.58, -1.65, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 6");
+                } 
+                else 
+                {
+                    publish_position(3.58, -1.65, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 601");
+                        // step_ = 601;
+                        step_ = 7;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 601: 
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(3.58, -1.65, 0.5);
+                    RCLCPP_INFO(this->get_logger(), "reach step 601");
+                } 
+                else 
+                {
+                    publish_position(3.58, -1.65, 0.5); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+
+                        if(!servo_action_started_)
+                        {
+                        servo_action_start_time_=this->now();  
+                        servo_action_started_=true;
+                        control_servo(2, 80); 
+                        // control_servo(2, 0);
+                        }
+                        else 
+                        {
+                            auto elapsed_servo = this->now() - servo_action_start_time_;
+                            control_servo(2, 80); 
+                            // control_servo(2, 0); 
+                            if (elapsed_servo.seconds() >= 0.6) {
+                                RCLCPP_INFO(this->get_logger(), "go to step 602");
+                                step_ = 602;
+                                hold_position_start_ = false;  // 清除状态
+                                servo_action_started_ = false; // 重置舵机动作状态
+                            }
+
+                        }                 
+                    }        
+                }
+                
+            break;
+                
+            case 602:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(3.58, -1.65, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 602");
+                } 
+                else 
+                {
+                    publish_position(3.58, -1.65, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 7");
+                        step_ = 7;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 7: // 二维码前1米
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(2.80, 0.0, 1.30);
+                RCLCPP_INFO(this->get_logger(), "reach step 7");
+            } 
+            else 
+            {
+                publish_position(2.80, 0.0, 1.30); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 8");
+                    step_ = 8;
+                    // step_ = 9;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
+            break;	
+
+            case 8: //图片靶4,舵机投放位置
+             
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(3.55, 1.53, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 8");
+                } 
+                else 
+                {
+                    publish_position(3.55, 1.53, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 801");
+                        // step_ = 801;
+                        step_ = 9;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 801:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(3.55, 1.53, 0.5);
+                            RCLCPP_INFO(this->get_logger(), "reach step 801");
+                } else {
+                    publish_position(3.55, 1.53, 0.5); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+
+                        if(!servo_action_started_)
+                        {
+                        servo_action_start_time_=this->now();  
+                        servo_action_started_=true;
+                        control_servo(2, 0); // 舵机2转动到0度
+                        }
+                        else 
+                        {
+                            auto elapsed_servo = this->now() - servo_action_start_time_;
+                            control_servo(2, 0); // 舵机2转动到0度
+                            if (elapsed_servo.seconds() >= 0.6) {
+                                RCLCPP_INFO(this->get_logger(), "go to step 802");
+                                step_ = 802;
+                                hold_position_start_ = false;  // 清除状态
+                                servo_action_started_ = false; // 重置舵机动作状态
+                            }
+
+                        }                 
+                    }        
+                }
+                
+            break;
+
+            case 802:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(3.55, 1.53, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 802");
+                } else {
+                
+                    publish_position(3.55, 1.53, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+                        RCLCPP_INFO(this->get_logger(), "go to step 9");
+                        step_ = 9;
+                        hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 9:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(6.02, 1.05, 1.3);
+                            RCLCPP_INFO(this->get_logger(), "reach step 9");
+                } 
+                else 
+                {
+                    publish_position(6.02, 1.05, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 8.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 901");
+                    step_ = 901;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 901:
+            // 特殊把,舵机投放位置 
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                            publish_position(6.02, 1.05, 0.5);
+                            RCLCPP_INFO(this->get_logger(), "reach step 901");
+                } else {
+                    publish_position(6.02, 1.05, 0.5); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+
+                        if(!servo_action_started_)
+                        {
+                        servo_action_start_time_=this->now();  
+                        servo_action_started_=true;
+                        control_servo(1, 0); // 舵机1转动到0度
+                        }
+                        else 
+                        {
+                            auto elapsed_servo = this->now() - servo_action_start_time_;
+                            control_servo(1, 0); // 舵机1转动0度
+                            if (elapsed_servo.seconds() >= 0.6) {
+                                // control_servo(1, 90); // 舵机1转动到90度
+                                RCLCPP_INFO(this->get_logger(), "go to step 902");
+                                step_ = 902;
+                                hold_position_start_ = false;  // 清除状态
+                                servo_action_started_ = false; // 重置舵机动作状态
+                            }
+
+                        }                 
+                    }        
+                }
+            break; 
+
+            case 902:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.02, 1.05, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 902");
+                } 
+                else 
+                {
+                    publish_position(6.02, 1.05, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 3.9) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 10");
+                    step_ = 10;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;   
+
+            case 10: // 穿圆环起点
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.10, -0.73, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 10");
+                } 
+                else 
+                {
+                    publish_position(6.10, -0.73, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 11");
+                    step_ = 11;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 11: // 穿圆环起点
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.10, -0.73, 1.7);
+                    RCLCPP_INFO(this->get_logger(), "reach step 11");
+                } 
+                else 
+                {
+                    publish_position(6.10, -0.73, 1.7); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 12");
+                    step_ = 12;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 12: // 穿圆环终点
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.10, -2.27, 1.7);
+                    RCLCPP_INFO(this->get_logger(), "reach step 12");
+                } 
+                else 
+                {
+                    publish_position(6.10, -2.27, 1.7); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 13");
+                    step_ = 13;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 13: // 穿圆环终点
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(6.10, -2.27, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 13");
+                } 
+                else 
+                {
+                    publish_position(6.10, -2.27, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 14");
+                    step_ = 14;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;
+
+            case 14:
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(4.25, -2.30, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 14");
+                } 
+                else 
+                {
+                    publish_position(4.25, -2.30, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 15");
+                    step_ = 15;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break; 
+
+            case 15: 
+            
+                if (!hold_position_start_) {
+                    hold_pisition_start_time_= this->now();
+                    hold_position_start_ = true;
+                    publish_position(1.84, -1.56, 1.3);
+                    RCLCPP_INFO(this->get_logger(), "reach step 15");
+                } 
+                else 
+                {
+                    publish_position(1.84, -1.56, 1.3); 
+                    auto elapsed = this->now() - hold_pisition_start_time_;
+                    if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 16");
+                    step_ = 16;
+                    hold_position_start_ = false;  // 清除状态
+                    }
+                }
+                
+            break;    
+
+            case 16: // 二维码
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(1.79, 0.0, 1.3);
+                RCLCPP_INFO(this->get_logger(), "reach step 16");
+            } 
+            else 
+            {
+                publish_position(1.79, 0.0, 1.3); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 17");
+                    step_ = 17;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
+            break;	
+
+            case 17: // 原点
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(0.0, 0.0, 1.3);
+                RCLCPP_INFO(this->get_logger(), "reach step 17");
+            } 
+            else 
+            {
+                publish_position(0.0, 0.0, 1.3); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 18");
+                    step_ = 18;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
+            break;  
+
+            case 18: // 左降落点1.6 右降落点-1.6
+            
+            if (!hold_position_start_) {
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                publish_position(0.0, -1.6, 1.3);
+                RCLCPP_INFO(this->get_logger(), "reach step 18");
+            } 
+            else 
+            {
+                publish_position(0.0, -1.6, 1.3); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step 19");
+                    step_ = 19;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+        
+            break;
+           
+            case 19: // 左降落点1.6 右降落点-1.6
+                if (!hold_position_start_) {
+                hold_pisition_start_time_ = this->now();
+                hold_position_start_ = true;
+                publish_position(0.0, -1.60, 0.21);
+                    RCLCPP_INFO(this->get_logger(), "start step 19");
+                }
+                else { 
+
+                publish_position(0.0, -1.60, 0.21);
+                auto elapsed = this->now() - hold_pisition_start_time_;
+
+                if (elapsed.seconds() >= 8.0) {
+                    RCLCPP_INFO(this->get_logger(), "landed.");
+
+                    auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+
+                    arm_req->value = false;
+
+                    arming_client_->async_send_request(arm_req);
+                    // 等待 3 秒，确保 PX4 收到命令
+                    rclcpp::sleep_for(std::chrono::seconds(3));
+
+                    RCLCPP_INFO(this->get_logger(), "Disarm request sent. Shutting down...");
+
+                    rclcpp::shutdown();   // 关闭节点
+
+                    }
+                }
+                break;
+
+                
         }
+            auto t2 = this->now();
+            // RCLCPP_INFO(this->get_logger(), "%.2f ms", (t2 - t1).nanoseconds() / 1e6);
     }
 
     void handle_init_phase() {
-    // 发布固定位置 setpoint 保持 FCU 接受 OFFBOARD 模式
+            auto message = mavros_msgs::msg::PositionTarget();
+        message.header.stamp = this->now();
+        message.header.frame_id = "map";
+        message.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+        
+        // 设置掩码只使用位置控制
+        message.type_mask = 
+            mavros_msgs::msg::PositionTarget::IGNORE_VX |
+            mavros_msgs::msg::PositionTarget::IGNORE_VY |
+            mavros_msgs::msg::PositionTarget::IGNORE_VZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFX |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFY |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE|
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW;
+
+        // 设置初始位置
+        message.position.x = 0.0;
+        message.position.y = 0.0;
+        message.position.z = 0.12;  // 设置一个小的高度作为初始目标
+        
+
+        raw_pub->publish(message);
+/*
+         // 发布固定位置 setpoint 保持 FCU 接受 OFFBOARD 模式
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = this->now();
     pose.pose.position.x = 0.0;
     pose.pose.position.y = 0.0;
     pose.pose.position.z = 1.0; // 起飞目标高度
     pose_pub_->publish(pose); // 关键：>2Hz 持续发布
+  */      
+        // 模式未切换则切换
+        if (current_state_.mode != "OFFBOARD") {
+            if ((this->now() - last_request_time_).seconds() > 2.0) {
+                //实际飞行需要注释掉！如果通过程序切offboard，飞机失控时遥控器将无法接管，注释掉程序会一直等待遥控器切入offboard
 
-    // 模式未切换则切换
-    if (current_state_.mode != "OFFBOARD") {
-        if ((this->now() - last_request_time_).seconds() > 2.0) {
-            //实际飞行需要注释掉！如果通过程序切offboard，飞机失控时遥控器将无法接管，注释掉程序会一直等待遥控器切入offboard
+             //auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
+             //mode_req->custom_mode = "OFFBOARD";
+             //set_mode_client_->async_send_request(mode_req);
 
-            auto mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
-            mode_req->custom_mode = "OFFBOARD";
-            set_mode_client_->async_send_request(mode_req);
-
-            last_request_time_ = this->now();
-            RCLCPP_INFO(this->get_logger(), "Requesting OFFBOARD mode...");
+                last_request_time_ = this->now();
+                RCLCPP_INFO(this->get_logger(), "Requesting OFFBOARD mode...");
+            }
+            return;
         }
-        return;
-    }
 
-    // 解锁
-    if (!current_state_.armed) {
-        if ((this->now() - last_request_time_).seconds() > 1.0) {
-            auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
-            arm_req->value = true;
-            arming_client_->async_send_request(arm_req);
-            last_request_time_ = this->now();
-            RCLCPP_INFO(this->get_logger(), "Requesting arming...");
+        // 解锁
+        if (!current_state_.armed) {
+            if ((this->now() - last_request_time_).seconds() > 1.0) {
+                auto arm_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+                arm_req->value = true;  
+                arming_client_->async_send_request(arm_req);
+                last_request_time_ = this->now();
+                RCLCPP_INFO(this->get_logger(), "Requesting arming...");
+            }
+            return;
         }
-        return;
-    }
 
-    RCLCPP_INFO(this->get_logger(), "OFFBOARD & armed, proceed to step 1");
-    step_ = 1;
-    flag_ = 0;
-}
+        RCLCPP_INFO(this->get_logger(), "OFFBOARD & armed, proceed to step 1");
+        step_ = 1;
+        flag_ = 0;
+    }
 
     bool arm_drone(bool arm)
     {
@@ -239,6 +907,7 @@ private:
 
 
     int fly_to_target(double tx, double ty, double tz, double dt) {
+    	
         double ex = tx - current_pose_.pose.position.x;
         double ey = ty - current_pose_.pose.position.y;
         double ez = tz - current_pose_.pose.position.z;
@@ -249,21 +918,74 @@ private:
 
         publish_velocity(vx, vy, vz);
         //输出速度
-        RCLCPP_INFO(this->get_logger(), "vx = %.2lf vy = %.2lf vz = %.2lf",vx,vy,vz);
+        // RCLCPP_INFO(this->get_logger(), "vx = %.2lf vy = %.2lf vz = %.2lf",vx,vy,vz);
         
-        double dist = std::sqrt(ex * ex + ey * ey + ez * ez);
-        return (dist < 0.1) ? 1 : 0;
+        double dist_x = std::fabs(ex);
+        double dist_y = std::fabs(ez);
+        double dist_z = std::fabs(ey);
+        
+        if (dist_x <= 0.15 && dist_y <= 0.15 && dist_z <= 0.05) 
+        {
+            return 1;
+        } 
+        else 
+        { 
+	    return 0;
+        }
     }
 
     void publish_velocity(double vx, double vy, double vz) {
-        geometry_msgs::msg::TwistStamped vel;
-        vel.header.stamp = this->now();
-        //速度限幅
-        vel.twist.linear.x = std::clamp(vx, -2.0, 2.0);
-        vel.twist.linear.y = std::clamp(vy, -2.0, 2.0);
-        vel.twist.linear.z = std::clamp(vz, -2.0, 2.0);
-        //发布速度
-        vel_pub_->publish(vel);
+        auto message = mavros_msgs::msg::PositionTarget();
+        message.header.stamp = this->now();
+        message.header.frame_id = "map";
+        message.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+        
+        // 设置掩码只使用速度控制
+        message.type_mask = 
+            mavros_msgs::msg::PositionTarget::IGNORE_PX |
+            mavros_msgs::msg::PositionTarget::IGNORE_PY |
+            mavros_msgs::msg::PositionTarget::IGNORE_PZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFX |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFY |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW;
+
+        // 速度限幅
+        message.velocity.x = std::clamp(vx, -2.0, 2.0);
+        message.velocity.y = std::clamp(vy, -2.0, 2.0);
+        message.velocity.z = std::clamp(vz, -2.0, 2.0);
+        //message.yaw = 0.0;
+
+        // 发布速度命令
+        raw_pub->publish(message);
+    }
+    
+    void publish_position(double px, double py, double pz) {
+        auto message = mavros_msgs::msg::PositionTarget();
+        message.header.stamp = this->now();
+        message.header.frame_id = "map";
+        message.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+        
+        // 设置掩码只使用速度控制
+        message.type_mask = 
+            mavros_msgs::msg::PositionTarget::IGNORE_VX |
+            mavros_msgs::msg::PositionTarget::IGNORE_VY |
+            mavros_msgs::msg::PositionTarget::IGNORE_VZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFX |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFY |
+            mavros_msgs::msg::PositionTarget::IGNORE_AFZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE |
+            mavros_msgs::msg::PositionTarget::IGNORE_YAW;
+
+        // 速度限幅
+        message.position.x = px;
+        message.position.y = py;
+        message.position.z = pz;
+        //message.yaw = 0.0;
+
+        // 发布速度命令
+        raw_pub->publish(message);
     }
 
     //舵机控制函数，直接输入要转动的角度
@@ -281,6 +1003,7 @@ private:
     RCLCPP_INFO(this->get_logger(), "Published servo angle: %d", angle);
 }
 
+    
     int step_;
     int flag_;
 
@@ -288,8 +1011,14 @@ private:
     rclcpp::Time start_time_;
     //舵机控制时间延时
     rclcpp::Time servo_action_start_time_;
+    //悬停时间
+    rclcpp::Time hold_pisition_start_time_;
 
     bool servo_action_started_ = false;
+
+    bool hold_position_start_ = false;
+
+    bool pid_enabled_ = false;
 
     mavros_msgs::msg::State current_state_;
     geometry_msgs::msg::PoseStamped current_pose_;
@@ -303,9 +1032,11 @@ private:
 
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_sub_;
 
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+    //  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
 
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr vel_pub_;
+    //  rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr vel_pub_;
+
+    rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr raw_pub;
 
     rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr set_mode_client_;
 
