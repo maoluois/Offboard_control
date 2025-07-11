@@ -166,12 +166,12 @@ private:
             if (!hold_position_start_) {
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
-                RCLCPP_INFO(this->get_logger(), "reach A3");
+                fly_to_target("A3");
+                RCLCPP_INFO(this->get_logger(), "start taking stock");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("A3"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to A2");
@@ -183,14 +183,20 @@ private:
 
             case 3: // A2
             if (!hold_position_start_) {
+                //发送A3货物编号,向串口屏n2.val赋值
+                serial_screen_control(2);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
+                //转动云台
+
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("A2");
                 RCLCPP_INFO(this->get_logger(), "reach A3");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("A2"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to A1");
@@ -202,14 +208,18 @@ private:
 
             case 4: // A1
             if (!hold_position_start_) {
+                 //发送A2货物编号,向串口屏n1.val赋值
+                serial_screen_control(1);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("A1");
                 RCLCPP_INFO(this->get_logger(), "reach A2");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("A1"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to A5");
@@ -219,16 +229,20 @@ private:
             }
             break;
            
-            case 5: // A5
+            case 5: // A4
             if (!hold_position_start_) {
+                 //发送A1货物编号,向串口屏n0.val赋值
+                serial_screen_control(0);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("A4");
                 RCLCPP_INFO(this->get_logger(), "reach A1");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("A4"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to A6");
@@ -238,16 +252,43 @@ private:
             }
             break;
 
-            case 6: // A6
+            case 6: // A5
             if (!hold_position_start_) {
+                 //发送A5货物编号,向串口屏n3.val赋值
+                serial_screen_control(3);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("A5");
                 RCLCPP_INFO(this->get_logger(), "reach A5");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("A5"); 
+                auto elapsed = this->now() - hold_pisition_start_time_;
+                if (elapsed.seconds() >= 5.0) {
+                    RCLCPP_INFO(this->get_logger(), "go to step6"); //转云台
+                    step_ = 77;
+                    hold_position_start_ = false;  // 清除状态
+                }
+            }
+            break;
+
+            case 77: // A6
+            if (!hold_position_start_) {
+                 //发送A5货物编号,向串口屏n4.val赋值
+                serial_screen_control(4);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
+                hold_pisition_start_time_= this->now();
+                hold_position_start_ = true;
+                fly_to_target("A6");
+                RCLCPP_INFO(this->get_logger(), "reach A5");
+            } 
+            else 
+            {
+                fly_to_target("A6"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to step6"); //转云台
@@ -259,6 +300,11 @@ private:
 
             case 7: // 中间点1
             if (!hold_position_start_) {
+                 //发送A6货物编号,向串口屏n5.val赋值
+                serial_screen_control(5);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
+                
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
                 publish_position(1.80, 0.20, 1.3);
@@ -299,12 +345,12 @@ private:
             if (!hold_position_start_) {
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("B1");
                 RCLCPP_INFO(this->get_logger(), "reach step8");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("B1"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to B2");
@@ -316,14 +362,18 @@ private:
 
             case 10: // B2
             if (!hold_position_start_) {
+                //发送B1货物编号,向串口屏n6.val赋值
+                serial_screen_control(6);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("B2");
                 RCLCPP_INFO(this->get_logger(), "reach B1");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("B2"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to B3");
@@ -335,14 +385,18 @@ private:
 
             case 11: // B3
             if (!hold_position_start_) {
+                //发送B2货物编号,向串口屏n7.val赋值
+                serial_screen_control(7);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("B3");
                 RCLCPP_INFO(this->get_logger(), "reach B2");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("B3"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to B6");
@@ -354,14 +408,18 @@ private:
 
             case 12: // B6
             if (!hold_position_start_) {
+                //发送B3货物编号,向串口屏n8.val赋值
+                serial_screen_control(8);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("B6");
                 RCLCPP_INFO(this->get_logger(), "reach B3");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("B6"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to B5");
@@ -373,14 +431,18 @@ private:
 
             case 13: // B5
             if (!hold_position_start_) {
+                //发送B6货物编号,向串口屏n11.val赋值
+                serial_screen_control(11);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("B5");
                 RCLCPP_INFO(this->get_logger(), "reach B6");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("B5"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to B4");
@@ -392,14 +454,18 @@ private:
 
             case 14: // B4
             if (!hold_position_start_) {
+                //发送B5货物编号,向串口屏n10.val赋值
+                serial_screen_control(10);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
-                publish_position(1.80, 0.20, 1.3);
+                fly_to_target("B4");
                 RCLCPP_INFO(this->get_logger(), "reach B5");
             } 
             else 
             {
-                publish_position(1.80, 0.20, 1.3); 
+                fly_to_target("B4"); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to B4");
@@ -409,8 +475,12 @@ private:
             }
             break;
 
-            case 15: // B4
+            case 15: // 降落中间点1
             if (!hold_position_start_) {
+                //发送B4货物编号,向串口屏n9.val赋值
+                serial_screen_control(9);
+                //激光笔指示
+                control_laser_pointer(1,0.5);
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
                 publish_position(1.80, 0.20, 1.3);
@@ -421,32 +491,32 @@ private:
                 publish_position(1.80, 0.20, 1.3); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to B4");  //转云台
+                    RCLCPP_INFO(this->get_logger(), "go to step 16");  //转云台
                     step_ = 16;
                     hold_position_start_ = false;  // 清除状态
                 }
             }
             break;
 
-            case 16: 
+            case 16: //降落点上方
             if (!hold_position_start_) {
                 hold_pisition_start_time_= this->now();
                 hold_position_start_ = true;
                 publish_position(1.80, 0.20, 1.3);
-                RCLCPP_INFO(this->get_logger(), "reach B4");
+                RCLCPP_INFO(this->get_logger(), "reach step 16");
             } 
             else 
             {
                 publish_position(1.80, 0.20, 1.3); 
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
-                    RCLCPP_INFO(this->get_logger(), "go to B4");  //转云台
+                    RCLCPP_INFO(this->get_logger(), "go to step 111");  //转云台
                     step_ = 111;
                     hold_position_start_ = false;  // 清除状态
                 }
             }
             break;
-            //---------------------------任务1---------------------- 
+            //------------------------------------------------------ 
 
 
             //---------------------------任务2----------------------
@@ -463,13 +533,14 @@ private:
                 auto elapsed = this->now() - hold_pisition_start_time_;
                 if (elapsed.seconds() >= 5.0) {
                     RCLCPP_INFO(this->get_logger(), "go to B4");  //转云台
-                    step_ = 111;
+                    step_ = 202;
                     hold_position_start_ = false;  // 清除状态
                 }
             }
             break;
 
-            //---------------------------任务2---------------------- 
+            //------------------------------------------------------- 
+
             case 111://降落
                 if (!hold_position_start_) {
                 hold_pisition_start_time_ = this->now();
@@ -592,37 +663,30 @@ private:
         last_request_time_ = this->now();
         return false; // 需要等待响应
     }
+    //通过货物编号来指点飞行
+    void fly_to_target(const std::string& position_label) {
+        //定义位置对应坐标
+        std::unordered_map<std::string, std::tuple<double, double, double>> positions = {
+        {"A1", {0.0, 0.0, 1.3}}, {"A2", {1.0, 1.0, 1.3}}, {"A3", {0.0, 1.0, 1.3}},
+        {"A4", {1.0, 0.0, 1.3}}, {"A5", {1.0, 1.0, 1.3}}, {"A6", {1.0, 1.0, 1.3}},
 
+        {"B1", {2.0, 0.0, 1.3}}, {"B2", {2.0, 1.0, 1.3}}, {"B3", {2.0, 2.0, 1.3}},
+        {"B4", {3.0, 0.0, 1.3}}, {"B5", {3.0, 1.0, 1.3}}, {"B6", {3.0, 2.0, 1.3}},
 
-    int fly_to_target(double tx, double ty, double tz, double dt) {
-    	
-        double ex = tx - current_pose_.pose.position.x;
-        double ey = ty - current_pose_.pose.position.y;
-        double ez = tz - current_pose_.pose.position.z;
+        {"C1", {4.0, 0.0, 1.3}}, {"C2", {4.0, 1.0, 1.3}}, {"C3", {4.0, 2.0, 1.3}},
+        {"C4", {5.0, 0.0, 1.3}}, {"C5", {5.0, 1.0, 1.3}}, {"C6", {5.0, 2.0, 1.3}},
 
-        double vx = pid_x_.compute(tx, current_pose_.pose.position.x, current_vel_.twist.linear.x, dt);
-        double vy = pid_y_.compute(ty, current_pose_.pose.position.y, current_vel_.twist.linear.y, dt);
-        double vz = pid_z_.compute(tz, current_pose_.pose.position.z, current_vel_.twist.linear.z, dt);
-
-        publish_velocity(vx, vy, vz);
-        //输出速度
-        // RCLCPP_INFO(this->get_logger(), "vx = %.2lf vy = %.2lf vz = %.2lf",vx,vy,vz);
-        
-        double dist_x = std::fabs(ex);
-        double dist_y = std::fabs(ez);
-        double dist_z = std::fabs(ey);
-        
-        if (dist_x <= 0.15 && dist_y <= 0.15 && dist_z <= 0.05) 
-        {
-            return 1;
-        } 
-        else 
-        { 
-	    return 0;
-        }
+        {"D1", {6.0, 0.0, 1.3}}, {"D2", {6.0, 1.0, 1.3}}, {"D3", {6.0, 2.0, 1.3}},
+        {"D4", {7.0, 0.0, 1.3}}, {"D5", {7.0, 1.0, 1.3}}, {"D6", {7.0, 2.0, 1.3}}
+    };
+        //判断编号是否有效
+        if (positions.find(position_label) == positions.end()) {
+        RCLCPP_WARN(this->get_logger(), "位置编号无效: %s", position_label.c_str());
+        return;
     }
 
-    void publish_velocity(double vx, double vy, double vz) {
+        auto target_pos = positions[position_label];
+
         auto message = mavros_msgs::msg::PositionTarget();
         message.header.stamp = this->now();
         message.header.frame_id = "map";
@@ -630,25 +694,25 @@ private:
         
         // 设置掩码只使用速度控制
         message.type_mask = 
-            mavros_msgs::msg::PositionTarget::IGNORE_PX |
-            mavros_msgs::msg::PositionTarget::IGNORE_PY |
-            mavros_msgs::msg::PositionTarget::IGNORE_PZ |
+            mavros_msgs::msg::PositionTarget::IGNORE_VX |
+            mavros_msgs::msg::PositionTarget::IGNORE_VY |
+            mavros_msgs::msg::PositionTarget::IGNORE_VZ |
             mavros_msgs::msg::PositionTarget::IGNORE_AFX |
             mavros_msgs::msg::PositionTarget::IGNORE_AFY |
             mavros_msgs::msg::PositionTarget::IGNORE_AFZ |
             mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE |
             mavros_msgs::msg::PositionTarget::IGNORE_YAW;
 
-        // 速度限幅
-        message.velocity.x = std::clamp(vx, -2.0, 2.0);
-        message.velocity.y = std::clamp(vy, -2.0, 2.0);
-        message.velocity.z = std::clamp(vz, -2.0, 2.0);
+        
+        message.position.x = std::get<0>(target_pos);
+        message.position.y = std::get<1>(target_pos);
+        message.position.z = std::get<2>(target_pos);
         //message.yaw = 0.0;
 
-        // 发布速度命令
+        // 发布位置
         raw_pub_->publish(message);
     }
-    
+
     void publish_position(double px, double py, double pz) {
         auto message = mavros_msgs::msg::PositionTarget();
         message.header.stamp = this->now();
@@ -729,13 +793,13 @@ void control_angle(int angle) {
     std::string task_msg_;
 
     int qr_data_;
-
+    //二维码扫描标志位
     bool qr_scan_started_ = false;
 
     bool hold_position_start_ = false;
 
     bool pid_enabled_ = false;
-
+    
     mavros_msgs::msg::State current_state_;
     geometry_msgs::msg::PoseStamped current_pose_;
     geometry_msgs::msg::TwistStamped current_vel_;
