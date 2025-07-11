@@ -11,8 +11,8 @@ class QRCodeDetector(Node):
         
         # 初始化摄像头（降低分辨率）
         self.cap = cv2.VideoCapture(0)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)  
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)  
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)  
         
         # 创建二维码数据发布者
         self.qr_pub = self.create_publisher(String, 'qr_data', 10)
